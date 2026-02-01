@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Search, Plus } from 'lucide-react-native';
 import {
   StyleSheet,
   Text,
@@ -20,6 +21,7 @@ import type { Product } from '../types/product';
 import type { RoutineType } from '../types/routine';
 import type { UserProductStatus } from '../types/user-product';
 import { PRODUCT_CATEGORY_LABELS, type ProductCategory } from '../types/product';
+import { Colors } from '../constants/Colors';
 
 const CATEGORIES: { key: ProductCategory | ''; label: string }[] = [
   { key: '', label: 'Tümü' },
@@ -185,7 +187,7 @@ export default function ProductsScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Text style={styles.addButtonIcon}>+</Text>
+                <Plus size={16} color={Colors.white} />
                 <Text style={styles.addButtonText}>Rutine Ekle</Text>
               </>
             )}
@@ -197,7 +199,7 @@ export default function ProductsScreen() {
               disabled={isAdding || isAddingShelf}
             >
               {isAddingShelf ? (
-                <ActivityIndicator size="small" color="#22c55e" />
+                <ActivityIndicator size="small" color={Colors.dark} />
               ) : (
                 <Text style={styles.shelfButtonText}>Rafıma Ekle</Text>
               )}
@@ -219,11 +221,11 @@ export default function ProductsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.searchWrap}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Search size={18} color={Colors.textSecondary} style={{ marginRight: 10 }} />
           <TextInput
             style={styles.searchInput}
             placeholder="Ürün, marka, içerik ara..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={Colors.textSecondary}
             value={search}
             onChangeText={setSearch}
           />
@@ -268,7 +270,7 @@ export default function ProductsScreen() {
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#ec4899" />
+          <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -294,7 +296,7 @@ export default function ProductsScreen() {
         style={[styles.fab, { bottom: insets.bottom + 24 }]}
         onPress={() => router.push('/products/add')}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Plus size={20} color={Colors.white} />
         <Text style={styles.fabText}>Ürün Ekle</Text>
       </Pressable>
     </View>
@@ -304,7 +306,7 @@ export default function ProductsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f3ef',
+    backgroundColor: Colors.background,
   },
   searchWrap: {
     paddingHorizontal: 20,
@@ -313,11 +315,11 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Colors.border,
   },
   searchIcon: {
     fontSize: 18,
@@ -327,7 +329,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1f2937',
+    color: Colors.text,
   },
   filters: {
     marginBottom: 12,
@@ -341,19 +343,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.lightGray,
     marginRight: 8,
   },
   filterPillActive: {
-    backgroundColor: '#fce7f3',
+    backgroundColor: Colors.light,
   },
   filterPillText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   filterPillTextActive: {
-    color: '#ec4899',
+    color: Colors.primary,
+    fontWeight: '700',
   },
   resultsRow: {
     paddingHorizontal: 20,
@@ -361,7 +364,7 @@ const styles = StyleSheet.create({
   },
   resultsText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '600',
   },
   loadingWrap: {
@@ -379,16 +382,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: Colors.textSecondary,
   },
   card: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     marginBottom: 12,
     overflow: 'hidden',
@@ -409,14 +412,14 @@ const styles = StyleSheet.create({
   cardImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardImagePlaceholderText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#9ca3af',
+    color: Colors.gray,
   },
   cardBody: {
     flex: 1,
@@ -426,12 +429,12 @@ const styles = StyleSheet.create({
   cardName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.text,
     marginBottom: 2,
   },
   cardBrand: {
     fontSize: 13,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 6,
   },
   tagWrap: {
@@ -440,7 +443,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tag: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.lightGray,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -448,13 +451,13 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6b7280',
+    color: Colors.textSecondary,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -466,12 +469,12 @@ const styles = StyleSheet.create({
   addButtonIcon: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.white,
   },
   addButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#fff',
+    color: Colors.white,
   },
   shelfButtons: {
     flexDirection: 'row',
@@ -483,33 +486,33 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 8,
-    backgroundColor: '#dcfce7',
+    backgroundColor: Colors.light,
     alignItems: 'center',
   },
   shelfButtonWishlist: {
-    backgroundColor: '#f3e8ff',
+    backgroundColor: Colors.mediumLight,
   },
   shelfButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#22c55e',
+    color: Colors.dark,
   },
   shelfButtonTextWishlist: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#7c3aed',
+    color: Colors.dark,
   },
   fab: {
     position: 'absolute',
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 28,
     gap: 8,
-    shadowColor: '#ec4899',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -518,11 +521,11 @@ const styles = StyleSheet.create({
   fabIcon: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.white,
   },
   fabText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: Colors.white,
   },
 });

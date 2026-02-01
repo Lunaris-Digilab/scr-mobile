@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { supabase } from '../lib/supabase';
+import { Colors } from '../constants/Colors';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export default function RegisterScreen() {
         <TextInput
           style={styles.input}
           placeholder="E-posta"
-          placeholderTextColor="#666"
+          placeholderTextColor={Colors.textSecondary}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -76,7 +77,7 @@ export default function RegisterScreen() {
         <TextInput
           style={styles.input}
           placeholder="Şifre (min. 6 karakter)"
-          placeholderTextColor="#666"
+          placeholderTextColor={Colors.textSecondary}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -85,7 +86,7 @@ export default function RegisterScreen() {
         <TextInput
           style={styles.input}
           placeholder="Şifre tekrar"
-          placeholderTextColor="#666"
+          placeholderTextColor={Colors.textSecondary}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
@@ -97,7 +98,7 @@ export default function RegisterScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={Colors.buttonText} />
           ) : (
             <Text style={styles.buttonText}>Kayıt Ol</Text>
           )}
@@ -117,7 +118,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     padding: 24,
   },
@@ -127,17 +128,17 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   input: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: Colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: Colors.inputBorder,
     borderRadius: 8,
     padding: 14,
-    color: '#fff',
+    color: Colors.text,
     fontSize: 16,
     marginBottom: 16,
   },
   button: {
-    backgroundColor: '#16a34a',
+    backgroundColor: Colors.buttonBackground,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: '#fff',
+    color: Colors.buttonText,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -156,11 +157,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: '#888',
+    color: Colors.textSecondary,
     fontSize: 14,
   },
   linkBold: {
-    color: '#16a34a',
+    color: Colors.primary,
     fontWeight: '600',
   },
 });

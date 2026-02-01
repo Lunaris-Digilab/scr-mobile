@@ -1,9 +1,7 @@
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
-
-// Emoji tab icons avoid "Unable to save asset to directory" in Expo Go on iOS
-// (Ionicons font fails to cache in simulator @anonymous path). Use
-// `npx expo run:ios` for a dev build if you want vector icons back.
+import { Calendar, Package, ShoppingBag, User } from 'lucide-react-native';
+import { Colors } from '../../constants/Colors';
 
 export default function TabLayout() {
   return (
@@ -11,11 +9,11 @@ export default function TabLayout() {
       initialRouteName="shelf"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#1f2937',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: Colors.tabIconSelected,
+        tabBarInactiveTintColor: Colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: '#f3f4f6',
-          borderTopColor: '#e5e7eb',
+          backgroundColor: Colors.tabBarBackground,
+          borderTopColor: Colors.border,
           paddingTop: 8,
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           height: Platform.OS === 'ios' ? 88 : 64,
@@ -30,16 +28,18 @@ export default function TabLayout() {
         name="routine"
         options={{
           title: 'Routine',
-          tabBarIcon: () => <Text style={styles.tabEmoji}>📅</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <Calendar color={color} size={size || 24} />
+          ),
         }}
       />
       <Tabs.Screen
         name="shelf"
         options={{
           title: 'Shelf',
-          tabBarIcon: ({ focused }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <Text style={styles.tabEmoji}>📦</Text>
+              <Package color={focused ? Colors.primary : color} size={size || 24} />
             </View>
           ),
         }}
@@ -48,14 +48,18 @@ export default function TabLayout() {
         name="products"
         options={{
           title: 'Products',
-          tabBarIcon: () => <Text style={styles.tabEmoji}>🛒</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <ShoppingBag color={color} size={size || 24} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: () => <Text style={styles.tabEmoji}>👤</Text>,
+          tabBarIcon: ({ color, size }) => (
+            <User color={color} size={size || 24} />
+          ),
         }}
       />
     </Tabs>
@@ -63,9 +67,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabEmoji: {
-    fontSize: 22,
-  },
   iconWrap: {
     width: 40,
     height: 40,
@@ -74,6 +75,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapActive: {
-    backgroundColor: '#fce7f3',
+    backgroundColor: Colors.light,
   },
 });

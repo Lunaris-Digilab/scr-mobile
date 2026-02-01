@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { addStepToRoutine, updateStepInRoutine } from '../../lib/routines';
+import { Colors } from '../../constants/Colors';
 
 export default function AddStepScreen() {
   const router = useRouter();
@@ -79,7 +80,7 @@ export default function AddStepScreen() {
         <TextInput
           style={styles.input}
           placeholder="Örn: Gentle Cleanser"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={Colors.textSecondary}
           value={name}
           onChangeText={setName}
           editable={!loading}
@@ -89,7 +90,7 @@ export default function AddStepScreen() {
         <TextInput
           style={[styles.input, styles.inputMultiline]}
           placeholder="Örn: Hydrating Formula"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={Colors.textSecondary}
           value={description}
           onChangeText={setDescription}
           editable={!loading}
@@ -102,7 +103,7 @@ export default function AddStepScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={Colors.buttonText} />
           ) : (
             <Text style={styles.buttonText}>
               {isEdit ? 'Güncelle' : 'Ekle'}
@@ -117,11 +118,11 @@ export default function AddStepScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f3ef',
+    backgroundColor: Colors.background,
     padding: 20,
   },
   form: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -133,17 +134,17 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: Colors.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: Colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Colors.inputBorder,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#1f2937',
+    color: Colors.text,
     marginBottom: 16,
   },
   inputMultiline: {
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   button: {
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -163,6 +164,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: Colors.buttonText,
   },
 });

@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
+import { Colors } from '../../constants/Colors';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function ProfileScreen() {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#ec4899" />
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
@@ -61,7 +62,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f3ef',
+    backgroundColor: Colors.background,
     paddingHorizontal: 20,
   },
   centered: {
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#fce7f3',
+    backgroundColor: Colors.light,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -91,11 +92,11 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#ec4899',
+    color: Colors.primary,
   },
   email: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
   },
   signOutButton: {
     marginTop: 24,

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Package, Plus } from 'lucide-react-native';
 import {
   StyleSheet,
   Text,
@@ -8,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,8 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { getUserProducts, removeFromShelf, updateUserProduct } from '../lib/user-products';
 import { getShelfBadge } from '../lib/shelf-badge';
-import type { UserProductStatus, UserProductWithProduct } from '../types/user-product';
+import type { UserProductWithProduct, UserProductStatus } from '../types/user-product';
+import { Colors } from '../constants/Colors';
 
 const TABS: { key: UserProductStatus; label: string }[] = [
   { key: 'opened', label: 'Rafım' },
@@ -187,7 +188,7 @@ export default function ShelfScreen() {
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#22c55e" />
+          <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -203,7 +204,7 @@ export default function ShelfScreen() {
           columnWrapperStyle={styles.gridRow}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>📦</Text>
+              <Package size={48} color={Colors.textSecondary} style={{ marginBottom: 16 }} />
               <Text style={styles.emptyText}>
                 {activeTab === 'opened' && 'Henüz rafınızda ürün yok.'}
                 {activeTab === 'wishlist' && 'İstek listeniz boş.'}
@@ -221,7 +222,7 @@ export default function ShelfScreen() {
         style={[styles.fab, { bottom: insets.bottom + 24 }]}
         onPress={() => router.push('/(tabs)/products')}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Plus size={20} color={Colors.white} />
         <Text style={styles.fabText}>Ürün Ekle</Text>
       </Pressable>
     </View>
@@ -231,7 +232,7 @@ export default function ShelfScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f3ef',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.text,
   },
   tabs: {
     flexDirection: 'row',
@@ -259,12 +260,12 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 15,
-    color: '#22c55e',
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   tabLabelActive: {
     fontWeight: '700',
-    color: '#15803d',
+    color: Colors.primary,
   },
   tabIndicator: {
     position: 'absolute',
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 3,
-    backgroundColor: '#22c55e',
+    backgroundColor: Colors.primary,
     borderRadius: 2,
   },
   loadingWrap: {
@@ -299,16 +300,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: Colors.textSecondary,
   },
   card: {
     width: '48%',
-    backgroundColor: '#fef3e2',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 0.9,
     position: 'relative',
-    backgroundColor: '#f5e6d3',
+    backgroundColor: Colors.lightGray,
   },
   cardImage: {
     width: '100%',
@@ -330,13 +331,14 @@ const styles = StyleSheet.create({
   cardImagePlaceholder: {
     width: '100%',
     height: '100%',
+    backgroundColor: Colors.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardImagePlaceholderText: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#d4a574',
+    color: Colors.gray,
   },
   badge: {
     position: 'absolute',
@@ -351,14 +353,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
   },
   badgeWarning: {
-    backgroundColor: '#fecaca',
+    backgroundColor: '#fecaca', // Keep as red for warning
   },
   badgeText: {
     fontSize: 11,
     fontWeight: '600',
   },
   badgeTextNormal: {
-    color: '#374151',
+    color: Colors.text,
   },
   badgeTextWarning: {
     color: '#b91c1c',
@@ -369,26 +371,26 @@ const styles = StyleSheet.create({
   cardBrand: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#6b7280',
+    color: Colors.textSecondary,
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   cardName: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.text,
   },
   fab: {
     position: 'absolute',
     right: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#22c55e',
+    backgroundColor: Colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 28,
     gap: 8,
-    shadowColor: '#22c55e',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -397,11 +399,11 @@ const styles = StyleSheet.create({
   fabIcon: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.white,
   },
   fabText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
+    color: Colors.white,
   },
 });

@@ -20,10 +20,13 @@ import {
 } from '../lib/routines';
 import { getTodayLog, upsertTodayLog, isValidUuid } from '../lib/routine-logs';
 import type { RoutineStep, RoutineType } from '../types/routine';
+import { Colors } from '../constants/Colors';
 
-const ROUTINE_TYPES: { key: RoutineType; label: string; icon: string }[] = [
-  { key: 'AM', label: 'Sabah', icon: '☀' },
-  { key: 'PM', label: 'Akşam', icon: '🌙' },
+import { Sun, Moon, Flame, Sparkles, Check, Plus } from 'lucide-react-native';
+
+const ROUTINE_TYPES: { key: RoutineType; label: string; Icon: typeof Sun }[] = [
+  { key: 'AM', label: 'Sabah', Icon: Sun },
+  { key: 'PM', label: 'Akşam', Icon: Moon },
 ];
 
 export default function RoutineScreen() {
@@ -157,7 +160,7 @@ export default function RoutineScreen() {
           <Text style={styles.title}>Günlük Rutin</Text>
           {totalSteps > 0 && (
             <View style={styles.streakBadge}>
-              <Text style={styles.streakIcon}>🔥</Text>
+              <Flame size={14} color={Colors.dark} />
               <Text style={styles.streakText}>Rutin</Text>
             </View>
           )}
@@ -165,13 +168,13 @@ export default function RoutineScreen() {
       </View>
 
       <View style={styles.tabs}>
-        {ROUTINE_TYPES.map(({ key, label, icon }) => (
+        {ROUTINE_TYPES.map(({ key, label, Icon }) => (
           <Pressable
             key={key}
             style={[styles.tab, activeTab === key && styles.tabActive]}
             onPress={() => handleTabChange(key)}
           >
-            <Text style={styles.tabIcon}>{icon}</Text>
+            <Icon size={18} color={activeTab === key ? Colors.text : Colors.textSecondary} />
             <Text
               style={[
                 styles.tabLabel,
@@ -208,13 +211,13 @@ export default function RoutineScreen() {
 
         {loading ? (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#ec4899" />
+            <ActivityIndicator size="large" color={Colors.primary} />
           </View>
         ) : (
           <View style={styles.listCard}>
             {steps.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={styles.emptyIcon}>✨</Text>
+                <Sparkles size={40} color={Colors.textSecondary} style={{ marginBottom: 12 }} />
                 <Text style={styles.emptyText}>
                   Henüz ürün eklemediniz. + ile ekleyin.
                 </Text>
@@ -263,7 +266,7 @@ export default function RoutineScreen() {
                       >
                         {isCompleted ? (
                           <View style={styles.stepCheckDone}>
-                            <Text style={styles.stepCheckIcon}>✓</Text>
+                            <Check size={14} color={Colors.white} strokeWidth={3} />
                           </View>
                         ) : (
                           <View style={styles.stepCheckEmpty} />
@@ -292,7 +295,7 @@ export default function RoutineScreen() {
         }}
         disabled={!routineId}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Plus size={28} color={Colors.white} />
       </Pressable>
     </View>
   );
@@ -301,7 +304,7 @@ export default function RoutineScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f3ef',
+    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: 20,
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#9ca3af',
+    color: Colors.textSecondary,
     marginBottom: 4,
   },
   titleRow: {
@@ -321,12 +324,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1f2937',
+    color: Colors.text,
   },
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fce7f3',
+    backgroundColor: Colors.light,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
@@ -338,12 +341,12 @@ const styles = StyleSheet.create({
   streakText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ec4899',
+    color: Colors.dark,
   },
   tabs: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.lightGray,
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
@@ -358,7 +361,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    backgroundColor: '#fce7f3',
+    backgroundColor: Colors.white,
   },
   tabIcon: {
     fontSize: 18,
@@ -366,10 +369,10 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#6b7280',
+    color: Colors.textSecondary,
   },
   tabLabelActive: {
-    color: '#1f2937',
+    color: Colors.text,
   },
   scroll: {
     flex: 1,
@@ -379,7 +382,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   progressCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -392,7 +395,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#22c55e',
+    color: Colors.success,
     letterSpacing: 0.5,
     marginBottom: 6,
   },
@@ -404,22 +407,22 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 14,
-    color: '#1f2937',
+    color: Colors.text,
   },
   progressPercent: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#ec4899',
+    color: Colors.primary,
   },
   progressBarBg: {
     height: 8,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.lightGray,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.primary,
     borderRadius: 4,
   },
   loadingWrap: {
@@ -427,7 +430,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -446,7 +449,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   stepRow: {
@@ -454,7 +457,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: Colors.lightGray,
   },
   stepRowContent: {
     flex: 1,
@@ -470,7 +473,7 @@ const styles = StyleSheet.create({
   stepImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.lightGray,
     borderRadius: 10,
   },
   stepBadge: {
@@ -480,14 +483,14 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.medium,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.white,
   },
   stepBody: {
     flex: 1,
@@ -495,12 +498,12 @@ const styles = StyleSheet.create({
   stepName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: Colors.text,
     marginBottom: 2,
   },
   stepDesc: {
     fontSize: 13,
-    color: '#6b7280',
+    color: Colors.textSecondary,
   },
   stepCheckWrap: {
     marginLeft: 12,
@@ -511,18 +514,18 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#d1d5db',
+    borderColor: Colors.lightGray,
   },
   stepCheckDone: {
     width: 24,
     height: 24,
     borderRadius: 6,
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepCheckIcon: {
-    color: '#fff',
+    color: Colors.white,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -532,10 +535,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ec4899',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -544,7 +547,7 @@ const styles = StyleSheet.create({
   fabIcon: {
     fontSize: 28,
     fontWeight: '300',
-    color: '#fff',
+    color: Colors.white,
     lineHeight: 32,
   },
   fabDisabled: {

@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { createProduct } from '../../lib/products';
 import { PRODUCT_CATEGORY_LABELS, type ProductCategory } from '../../types/product';
+import { Colors } from '../../constants/Colors';
 
 const CATEGORIES: ProductCategory[] = [
   'cleanser',
@@ -77,7 +78,7 @@ export default function AddProductScreen() {
           <TextInput
             style={styles.input}
             placeholder="Örn: Hyaluronic Water Gel"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={Colors.textSecondary}
             value={name}
             onChangeText={setName}
             editable={!loading}
@@ -86,7 +87,7 @@ export default function AddProductScreen() {
           <TextInput
             style={styles.input}
             placeholder="Örn: Neutrogena"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={Colors.textSecondary}
             value={brand}
             onChangeText={setBrand}
             editable={!loading}
@@ -118,7 +119,7 @@ export default function AddProductScreen() {
           <TextInput
             style={[styles.input, styles.inputMultiline]}
             placeholder="İçerik listesi veya notlar"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={Colors.textSecondary}
             value={ingredients}
             onChangeText={setIngredients}
             editable={!loading}
@@ -129,7 +130,7 @@ export default function AddProductScreen() {
           <TextInput
             style={styles.input}
             placeholder="https://..."
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={Colors.textSecondary}
             value={imageUrl}
             onChangeText={setImageUrl}
             editable={!loading}
@@ -142,7 +143,7 @@ export default function AddProductScreen() {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={Colors.buttonText} />
             ) : (
               <Text style={styles.buttonText}>Ürün Ekle</Text>
             )}
@@ -156,7 +157,7 @@ export default function AddProductScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f3ef',
+    backgroundColor: Colors.background,
   },
   scroll: {
     flex: 1,
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   form: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -178,18 +179,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: Colors.text,
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: Colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Colors.inputBorder,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#1f2937',
+    color: Colors.text,
   },
   inputMultiline: {
     minHeight: 80,
@@ -204,21 +205,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.lightGray,
   },
   categoryPillActive: {
-    backgroundColor: '#fce7f3',
+    backgroundColor: Colors.light,
   },
   categoryPillText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: Colors.textSecondary,
     fontWeight: '500',
   },
   categoryPillTextActive: {
-    color: '#ec4899',
+    color: Colors.primary,
   },
   button: {
-    backgroundColor: '#ec4899',
+    backgroundColor: Colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -230,6 +231,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
+    color: Colors.buttonText,
   },
 });
