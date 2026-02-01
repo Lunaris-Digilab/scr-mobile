@@ -15,8 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { getProducts } from '../lib/products';
 import { getOrCreateRoutine, addStepToRoutine } from '../lib/routines';
+import { addToShelf, getExistingUserProduct, updateUserProduct } from '../lib/user-products';
 import type { Product } from '../types/product';
 import type { RoutineType } from '../types/routine';
+import type { UserProductStatus } from '../types/user-product';
 import { PRODUCT_CATEGORY_LABELS, type ProductCategory } from '../types/product';
 
 const CATEGORIES: { key: ProductCategory | ''; label: string }[] = [
@@ -40,6 +42,7 @@ export default function ProductsScreen() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | ''>('');
   const [addingToRoutine, setAddingToRoutine] = useState<string | null>(null);
+  const [addingToShelf, setAddingToShelf] = useState<string | null>(null);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -109,8 +112,33 @@ export default function ProductsScreen() {
     }
   };
 
+  const handleAddToShelf = async (product: Product, status: UserProductStatus) => {
+    try {
+      setAddingToShelf(product.id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert('Hata', 'Giriş yapmanız gerekiyor.');
+        return;
+      }
+      const existing = await getExistingUserProduct(user.id, product.id);
+      if (existing) {
+        await updateUserProduct(existing.id, { status });
+        Alert.alert('Güncellendi', status === 'opened' ? 'Rafına taşındı.' : 'İstek listesine taşındı.');
+      } else {
+        await addToShelf(user.id, product.id, status);
+        Alert.alert('Eklendi', status === 'opened' ? 'Rafına eklendi.' : 'İstek listesine eklendi.');
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Hata', 'Eklenemedi.');
+    } finally {
+      setAddingToShelf(null);
+    }
+  };
+
   const renderProduct = ({ item }: { item: Product }) => {
     const isAdding = addingToRoutine === item.id;
+    const isAddingShelf = addingToShelf === item.id;
     const categoryLabel = item.category
       ? PRODUCT_CATEGORY_LABELS[item.category as ProductCategory]
       : null;
@@ -151,7 +179,7 @@ export default function ProductsScreen() {
           <Pressable
             style={[styles.addButton, isAdding && styles.addButtonDisabled]}
             onPress={() => handleAddToRoutine(item)}
-            disabled={isAdding}
+            disabled={isAdding || isAddingShelf}
           >
             {isAdding ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -162,6 +190,26 @@ export default function ProductsScreen() {
               </>
             )}
           </Pressable>
+          <View style={styles.shelfButtons}>
+            <Pressable
+              style={[styles.shelfButton, (isAdding || isAddingShelf) && styles.addButtonDisabled]}
+              onPress={() => handleAddToShelf(item, 'opened')}
+              disabled={isAdding || isAddingShelf}
+            >
+              {isAddingShelf ? (
+                <ActivityIndicator size="small" color="#22c55e" />
+              ) : (
+                <Text style={styles.shelfButtonText}>Rafıma Ekle</Text>
+              )}
+            </Pressable>
+            <Pressable
+              style={[styles.shelfButton, styles.shelfButtonWishlist, (isAdding || isAddingShelf) && styles.addButtonDisabled]}
+              onPress={() => handleAddToShelf(item, 'wishlist')}
+              disabled={isAdding || isAddingShelf}
+            >
+              <Text style={styles.shelfButtonTextWishlist}>İstek Listesi</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     );
@@ -424,6 +472,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#fff',
+  },
+  shelfButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  shelfButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: '#dcfce7',
+    alignItems: 'center',
+  },
+  shelfButtonWishlist: {
+    backgroundColor: '#f3e8ff',
+  },
+  shelfButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#22c55e',
+  },
+  shelfButtonTextWishlist: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#7c3aed',
   },
   fab: {
     position: 'absolute',

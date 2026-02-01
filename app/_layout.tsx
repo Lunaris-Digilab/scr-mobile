@@ -14,6 +14,10 @@ export default function RootLayout() {
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="login"
           options={{ title: 'Giriş Yap', headerBackTitle: 'Geri' }}
         />
@@ -22,29 +26,9 @@ export default function RootLayout() {
           options={{ title: 'Kayıt Ol', headerBackTitle: 'Geri' }}
         />
         <Stack.Screen
-          name="routine"
-          options={{
-            title: 'Günlük Rutin',
-            headerStyle: { backgroundColor: '#f5f3ef' },
-            headerTintColor: '#1f2937',
-            headerTitleStyle: { fontWeight: '600', color: '#1f2937' },
-            headerBackTitle: 'Geri',
-          }}
-        />
-        <Stack.Screen
           name="routine/add-step"
           options={{
             title: 'Ürün Ekle',
-            headerStyle: { backgroundColor: '#f5f3ef' },
-            headerTintColor: '#1f2937',
-            headerTitleStyle: { fontWeight: '600', color: '#1f2937' },
-            headerBackTitle: 'Geri',
-          }}
-        />
-        <Stack.Screen
-          name="products"
-          options={{
-            title: 'Ürünler',
             headerStyle: { backgroundColor: '#f5f3ef' },
             headerTintColor: '#1f2937',
             headerTitleStyle: { fontWeight: '600', color: '#1f2937' },

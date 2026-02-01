@@ -15,8 +15,10 @@ import { supabase } from '../lib/supabase';
 import {
   getOrCreateRoutine,
   removeStepFromRoutine,
+  updateRoutineSteps,
+  generateUuid,
 } from '../lib/routines';
-import { getTodayLog, upsertTodayLog } from '../lib/routine-logs';
+import { getTodayLog, upsertTodayLog, isValidUuid } from '../lib/routine-logs';
 import type { RoutineStep, RoutineType } from '../types/routine';
 
 const ROUTINE_TYPES: { key: RoutineType; label: string; icon: string }[] = [
@@ -61,7 +63,19 @@ export default function RoutineScreen() {
       try {
         const routine = await getOrCreateRoutine(uid, type, email);
         setRoutineId(routine.id);
-        setSteps(routine.steps ?? []);
+        let stepsToSet = routine.steps ?? [];
+        // Eski "step-xxx" id'leri UUID değil; routine_logs.completed_steps uuid[] kabul ediyor.
+        // UUID olmayan adımları UUID'ye çevirip rutini güncelliyoruz, böylece tamamlama kaydedilebilir.
+        const hasNonUuid = stepsToSet.some((s) => !isValidUuid(s.id));
+        if (hasNonUuid) {
+          const migrated = stepsToSet.map((s) => ({
+            ...s,
+            id: isValidUuid(s.id) ? s.id : generateUuid(),
+          }));
+          await updateRoutineSteps(routine.id, migrated);
+          stepsToSet = migrated;
+        }
+        setSteps(stepsToSet);
         await loadCompletedSteps(uid, routine.id);
       } catch (e) {
         console.error(e);

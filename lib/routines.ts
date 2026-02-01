@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { ensurePublicUser } from './users';
 import type { RoutineStep, RoutineType } from '../types/routine';
 
-function generateUuid(): string {
+export function generateUuid(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
