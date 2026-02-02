@@ -42,6 +42,17 @@ export async function getProductById(id: string) {
   return data as Product;
 }
 
+/** Birden fazla ürünü id ile getirir (rutin adımlarındaki görseller için). */
+export async function getProductsByIds(ids: string[]): Promise<Product[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, image_url')
+    .in('id', ids);
+  if (error) throw error;
+  return (data ?? []) as Product[];
+}
+
 export async function createProduct(input: {
   name: string;
   brand?: string;

@@ -8,6 +8,7 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import {
   generateUuid,
 } from '../lib/routines';
 import { getLogForDate, upsertLogForDate, isValidUuid } from '../lib/routine-logs';
+import { getProductsByIds } from '../lib/products';
 import type { RoutineStep, RoutineType } from '../types/routine';
 import { Colors } from '../constants/Colors';
 
@@ -57,6 +59,7 @@ export default function RoutineScreen() {
   const [activeTab, setActiveTab] = useState<RoutineType>('AM');
   const [routineId, setRoutineId] = useState<string | null>(null);
   const [steps, setSteps] = useState<RoutineStep[]>([]);
+  const [stepImageUrls, setStepImageUrls] = useState<Record<string, string>>({});
   const [completedStepIds, setCompletedStepIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -105,6 +108,21 @@ export default function RoutineScreen() {
         }
         setSteps(stepsToSet);
         await loadCompletedStepsForDate(uid, routine.id, selectedDate);
+        const productIds = [...new Set((stepsToSet as RoutineStep[]).map((s) => s.product_id).filter(Boolean) as string[])];
+        if (productIds.length > 0) {
+          try {
+            const products = await getProductsByIds(productIds);
+            const map: Record<string, string> = {};
+            products.forEach((p) => {
+              if (p.image_url) map[p.id] = p.image_url;
+            });
+            setStepImageUrls(map);
+          } catch {
+            setStepImageUrls({});
+          }
+        } else {
+          setStepImageUrls({});
+        }
       } catch (e) {
         console.error(e);
         Alert.alert('Hata', 'Rutin yüklenemedi.');
@@ -316,7 +334,15 @@ export default function RoutineScreen() {
                 >
                   <View style={styles.stepCardInner}>
                     <View style={styles.stepImageWrap}>
-                      <View style={styles.stepImagePlaceholder} />
+                      {step.product_id && stepImageUrls[step.product_id] ? (
+                        <Image
+                          source={{ uri: stepImageUrls[step.product_id] }}
+                          style={styles.stepImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.stepImagePlaceholder} />
+                      )}
                       <View style={styles.stepBadge}>
                         <Text style={styles.stepBadgeText}>{index + 1}</Text>
                       </View>
@@ -581,6 +607,11 @@ const styles = StyleSheet.create({
     height: 56,
     marginRight: 14,
     position: 'relative',
+  },
+  stepImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 28,
   },
   stepImagePlaceholder: {
     width: '100%',
