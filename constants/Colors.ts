@@ -2,7 +2,7 @@ const palette = {
   light: '#FFEFEF',       // Peach/Apricot
   mediumLight: '#F0EBE3', // Slightly darker peach
   medium: '#EFD5E2',      // Pinkish
-  dark: '#F3D0D7',        // Mauve/Dark pink
+  dark: '#C97B8B',        // Mauve/Dark pink
   white: '#FFFFFF',
   offWhite: '#FAFAFA',
   black: '#1F2937',       // Dark gray/black

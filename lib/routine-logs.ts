@@ -16,7 +16,17 @@ function todayISO(): string {
  * completed_steps uuid[] olduğu için sadece UUID formatındaki id'ler döner.
  */
 export async function getTodayLog(userId: string, routineId: string) {
-  const date = todayISO();
+  return getLogForDate(userId, routineId, todayISO());
+}
+
+/**
+ * Belirli bir tarihin routine_log kaydını getirir (YYYY-MM-DD).
+ */
+export async function getLogForDate(
+  userId: string,
+  routineId: string,
+  date: string
+): Promise<string[]> {
   const { data, error } = await supabase
     .from('routine_logs')
     .select('completed_steps')
@@ -71,4 +81,18 @@ export async function upsertTodayLog(
     });
     if (error) throw error;
   }
+}
+
+/**
+ * Kullanıcının rutin tamamladığı benzersiz gün sayısını döner (profil streak için).
+ */
+export async function getRoutineLogDaysCount(userId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('routine_logs')
+    .select('date')
+    .eq('user_id', userId);
+
+  if (error) throw error;
+  const dates = new Set((data ?? []).map((r) => r.date as string));
+  return dates.size;
 }
