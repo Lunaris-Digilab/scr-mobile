@@ -13,6 +13,7 @@ import {
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { addStepToRoutine, updateStepInRoutine } from '../../lib/routines';
 import { Colors } from '../../constants/Colors';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function AddStepScreen() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function AddStepScreen() {
     name?: string;
     description?: string;
   }>();
-
+  const { t } = useLanguage();
   const isEdit = Boolean(params.stepId);
   const [name, setName] = useState(params.name ?? '');
   const [description, setDescription] = useState(params.description ?? '');
@@ -32,18 +33,18 @@ export default function AddStepScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      title: isEdit ? 'Ürünü Düzenle' : 'Ürün Ekle',
+      title: isEdit ? t('editProduct') : t('addProduct'),
     });
   }, [isEdit, navigation]);
 
   const handleSave = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      Alert.alert('Hata', 'Ürün adı girin.');
+      Alert.alert(t('error'), t('addProductErrorName'));
       return;
     }
     if (!params.routineId) {
-      Alert.alert('Hata', 'Rutin bulunamadı.');
+      Alert.alert(t('error'), t('routineNotFound'));
       return;
     }
 
@@ -64,7 +65,7 @@ export default function AddStepScreen() {
       router.back();
     } catch (e) {
       console.error(e);
-      Alert.alert('Hata', 'Kaydedilemedi.');
+      Alert.alert(t('error'), t('saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -76,7 +77,7 @@ export default function AddStepScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.form}>
-        <Text style={styles.label}>Ürün adı</Text>
+        <Text style={styles.label}>{t('productName')}</Text>
         <TextInput
           style={styles.input}
           placeholder="Örn: Gentle Cleanser"
@@ -86,7 +87,7 @@ export default function AddStepScreen() {
           editable={!loading}
           autoCapitalize="words"
         />
-        <Text style={styles.label}>Açıklama (isteğe bağlı)</Text>
+        <Text style={styles.label}>{t('description')}</Text>
         <TextInput
           style={[styles.input, styles.inputMultiline]}
           placeholder="Örn: Hydrating Formula"
@@ -106,7 +107,7 @@ export default function AddStepScreen() {
             <ActivityIndicator color={Colors.buttonText} />
           ) : (
             <Text style={styles.buttonText}>
-              {isEdit ? 'Güncelle' : 'Ekle'}
+              {isEdit ? t('update') : t('add')}
             </Text>
           )}
         </Pressable>

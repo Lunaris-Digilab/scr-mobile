@@ -29,21 +29,18 @@ import { addToShelf, getExistingUserProduct, updateUserProduct } from '../lib/us
 import type { Product } from '../types/product';
 import type { RoutineType } from '../types/routine';
 import type { UserProductStatus } from '../types/user-product';
-import { PRODUCT_CATEGORY_LABELS, getProductBrandDisplay, type ProductCategory } from '../types/product';
+import { getProductBrandDisplay, type ProductCategory } from '../types/product';
 import { Colors } from '../constants/Colors';
+import { useLanguage } from '../context/LanguageContext';
+import type { TranslationKey } from '../constants/translations';
 
-const CATEGORIES: { key: ProductCategory | ''; label: string }[] = [
-  { key: '', label: 'Tüm Ürünler' },
-  { key: 'cleanser', label: 'Temizleyici' },
-  { key: 'toner', label: 'Tonik' },
-  { key: 'serum', label: 'Serum' },
-  { key: 'moisturizer', label: 'Nemlendirici' },
-  { key: 'sunscreen', label: 'Güneş Kremi' },
-  { key: 'mask', label: 'Maske' },
-  { key: 'eye_cream', label: 'Göz Kremi' },
-  { key: 'treatment', label: 'Tedavi' },
-  { key: 'other', label: 'Diğer' },
+const CATEGORY_KEYS: (ProductCategory | '')[] = [
+  '', 'cleanser', 'toner', 'serum', 'moisturizer', 'sunscreen', 'mask', 'eye_cream', 'treatment', 'other',
 ];
+
+function getCategoryLabel(key: ProductCategory | '', t: (k: TranslationKey) => string): string {
+  return key ? t(('prodCat_' + key) as TranslationKey) : t('prodCat_all');
+}
 
 // Görseldeki "match" görünümü için: ürün indexine göre yüksek/orta/düşük gösterim
 function getMatchDisplay(index: number): { percent: number; color: string; Icon: typeof CircleCheck } {
@@ -56,7 +53,9 @@ function getMatchDisplay(index: number): { percent: number; color: string; Icon:
 export default function ProductsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
+  const CATEGORIES = CATEGORY_KEYS.map((key) => ({ key, label: getCategoryLabel(key, t) }));
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | ''>('');
@@ -74,11 +73,11 @@ export default function ProductsScreen() {
       setProducts(list);
     } catch (e) {
       console.error(e);
-      Alert.alert('Hata', 'Ürünler yüklenemedi.');
+      Alert.alert(t('error'), t('productsLoadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter]);
+  }, [search, categoryFilter, t]);
 
   useEffect(() => {
     const delay = setTimeout(loadProducts, 300);
@@ -87,16 +86,16 @@ export default function ProductsScreen() {
 
   const handleAddToRoutine = (product: Product) => {
     Alert.alert(
-      'Rutine Ekle',
-      `${product.name} hangi rutine eklensin?`,
+      t('productsAddToRoutineTitle'),
+      `${product.name} ${t('productsWhichRoutine')}`,
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Sabah Rutini',
+          text: t('productsMorningRoutine'),
           onPress: () => addProductToRoutine(product, 'AM'),
         },
         {
-          text: 'Akşam Rutini',
+          text: t('productsEveningRoutine'),
           onPress: () => addProductToRoutine(product, 'PM'),
         },
       ]
@@ -108,25 +107,24 @@ export default function ProductsScreen() {
       setAddingToRoutine(product.id);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        Alert.alert('Hata', 'Giriş yapmanız gerekiyor.');
+        Alert.alert(t('error'), t('productsLoginRequired'));
         return;
       }
       const routine = await getOrCreateRoutine(user.id, type, user.email ?? undefined);
       const brandDisplay = getProductBrandDisplay(product);
+      const catLabel = product.category ? getCategoryLabel(product.category, t) : '';
       await addStepToRoutine(routine.id, {
         name: product.name,
         description: brandDisplay
-          ? `${brandDisplay}${product.category ? ` • ${PRODUCT_CATEGORY_LABELS[product.category as ProductCategory]}` : ''}`
-          : product.category
-            ? PRODUCT_CATEGORY_LABELS[product.category as ProductCategory]
-            : undefined,
+          ? (product.category ? `${brandDisplay} • ${catLabel}` : brandDisplay)
+          : product.category ? catLabel : undefined,
         order: 0,
         product_id: product.id,
       });
-      Alert.alert('Eklendi', `${product.name} ${type === 'AM' ? 'Sabah' : 'Akşam'} rutinine eklendi.`);
+      Alert.alert(t('productsAdded'), `${product.name} – ${type === 'AM' ? t('productsAddedToMorning') : t('productsAddedToEvening')}`);
     } catch (e) {
       console.error(e);
-      Alert.alert('Hata', 'Rutine eklenemedi.');
+      Alert.alert(t('error'), t('productsAddToRoutineFailed'));
     } finally {
       setAddingToRoutine(null);
     }
@@ -137,20 +135,20 @@ export default function ProductsScreen() {
       setAddingToShelf(product.id);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        Alert.alert('Hata', 'Giriş yapmanız gerekiyor.');
+        Alert.alert(t('error'), t('productsLoginRequired'));
         return;
       }
       const existing = await getExistingUserProduct(user.id, product.id);
       if (existing) {
         await updateUserProduct(existing.id, { status });
-        Alert.alert('Güncellendi', status === 'opened' ? 'Rafına taşındı.' : 'İstek listesine taşındı.');
+        Alert.alert(t('productsUpdated'), status === 'opened' ? t('productsMovedToShelf') : t('productsMovedToWishlist'));
       } else {
         await addToShelf(user.id, product.id, status);
-        Alert.alert('Eklendi', status === 'opened' ? 'Rafına eklendi.' : 'İstek listesine eklendi.');
+        Alert.alert(t('productsAdded'), status === 'opened' ? t('productsAddedToShelf') : t('productsAddedToWishlist'));
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Hata', 'Eklenemedi.');
+      Alert.alert(t('error'), t('productsAddFailed'));
     } finally {
       setAddingToShelf(null);
     }
@@ -160,7 +158,7 @@ export default function ProductsScreen() {
     const isAdding = addingToRoutine === item.id;
     const isAddingShelf = addingToShelf === item.id;
     const categoryLabel = item.category
-      ? PRODUCT_CATEGORY_LABELS[item.category as ProductCategory]
+      ? getCategoryLabel(item.category, t)
       : null;
     const match = getMatchDisplay(index);
     const MatchIcon = match.Icon;
@@ -186,7 +184,7 @@ export default function ProductsScreen() {
           <View style={styles.matchRow}>
             <MatchIcon size={14} color={match.color} />
             <Text style={[styles.matchText, { color: match.color }]}>
-              %{match.percent} Eşleşme
+              %{match.percent} {t('productsMatch')}
             </Text>
           </View>
           <Text style={styles.cardName} numberOfLines={2}>
@@ -215,7 +213,7 @@ export default function ProductsScreen() {
               ) : (
                 <>
                   <Plus size={16} color={Colors.text} />
-                  <Text style={styles.addToRoutineText}>Rutine Ekle</Text>
+                  <Text style={styles.addToRoutineText}>{t('productsAddToRoutine')}</Text>
                 </>
               )}
             </Pressable>
@@ -235,7 +233,7 @@ export default function ProductsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Product Finder</Text>
+        <Text style={styles.headerTitle}>{t('productsTitle')}</Text>
         <Pressable style={styles.headerIcon} hitSlop={12}>
           <LayoutGrid size={22} color={Colors.text} />
         </Pressable>
@@ -246,7 +244,7 @@ export default function ProductsScreen() {
           <Search size={18} color={Colors.textSecondary} style={{ marginRight: 10 }} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Ürün, marka, içerik ara..."
+            placeholder={t('productsSearchPlaceholder')}
             placeholderTextColor={Colors.textSecondary}
             value={search}
             onChangeText={setSearch}
@@ -291,9 +289,9 @@ export default function ProductsScreen() {
 
       <View style={styles.resultsRow}>
         <Text style={styles.resultsText}>
-          {products.length} SONUÇ
+          {products.length} {t('productsResults')}
           {search.trim() ? ` "${search.trim()}"` : ''}
-          {categoryFilter ? ` • ${PRODUCT_CATEGORY_LABELS[categoryFilter as ProductCategory]}` : ''}
+          {categoryFilter ? ` • ${getCategoryLabel(categoryFilter, t)}` : ''}
         </Text>
       </View>
 
@@ -312,9 +310,9 @@ export default function ProductsScreen() {
           ]}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>Ürün bulunamadı.</Text>
+              <Text style={styles.emptyText}>{t('productsNoResults')}</Text>
               <Text style={styles.emptySubtext}>
-                Arama kriterlerini değiştirin veya kendi ürününüzü ekleyin.
+                {t('productsNoResultsHint')}
               </Text>
             </View>
           }
@@ -326,7 +324,7 @@ export default function ProductsScreen() {
         onPress={() => router.push('/products/add')}
       >
         <Plus size={20} color={Colors.white} />
-        <Text style={styles.fabText}>Ürün Ekle</Text>
+        <Text style={styles.fabText}>{t('productsAddProduct')}</Text>
       </Pressable>
     </View>
   );

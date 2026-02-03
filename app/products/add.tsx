@@ -20,12 +20,14 @@ import { getCategories } from '../../lib/categories';
 import { addStepToRoutine } from '../../lib/routines';
 import type { Category } from '../../types/category';
 import { Colors } from '../../constants/Colors';
+import { useLanguage } from '../../context/LanguageContext';
 import { ChevronDown, Lock, Star } from 'lucide-react-native';
 
 type ProductType = 'commercial' | 'other';
 
 export default function AddProductScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const { routineId, routineType } = useLocalSearchParams<{ routineId?: string; routineType?: string }>();
   const [productType, setProductType] = useState<ProductType>('commercial');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -53,7 +55,7 @@ export default function AddProductScreen() {
   const handleSave = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      Alert.alert('Hata', 'Ürün adı girin.');
+      Alert.alert(t('error'), t('addProductErrorName'));
       return;
     }
     setLoading(true);
@@ -72,20 +74,21 @@ export default function AddProductScreen() {
       if (routineId && product) {
         await addStepToRoutine(routineId, {
           name: trimmedName,
-          description: selectedCategory?.name || 'Ürün',
+          description: selectedCategory?.name || t('product'),
           product_id: product.id,
+          order: 0,
         });
-        Alert.alert('Kaydedildi', 'Ürün eklendi ve rutine dahil edildi.', [
-          { text: 'Tamam', onPress: () => router.back() },
+        Alert.alert(t('addProductSaved'), t('addProductSavedAndRoutine'), [
+          { text: t('addProductOk'), onPress: () => router.back() },
         ]);
       } else {
-        Alert.alert('Kaydedildi', 'Ürün eklendi.', [
-          { text: 'Tamam', onPress: () => router.back() },
+        Alert.alert(t('addProductSaved'), t('addProductSavedOnly'), [
+          { text: t('addProductOk'), onPress: () => router.back() },
         ]);
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Hata', 'Ürün eklenemedi.');
+      Alert.alert(t('error'), t('addProductSaveFailed'));
     } finally {
       setLoading(false);
     }
@@ -97,10 +100,7 @@ export default function AddProductScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
-        <Pressable style={styles.headerBtn} onPress={() => router.back()} disabled={loading}>
-          <Text style={styles.headerCancel}>İptal</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>Ürün / Aksiyon Ekle</Text>
+       <Text style={styles.headerTitle}>{t('addProductTitle')}</Text>
         <Pressable
           style={styles.headerBtn}
           onPress={handleSave}
@@ -109,7 +109,7 @@ export default function AddProductScreen() {
           {loading ? (
             <ActivityIndicator size="small" color={Colors.primary} />
           ) : (
-            <Text style={styles.headerSubmit}>Gönder</Text>
+            <Text style={styles.headerSubmit}>{t('addProductSubmit')}</Text>
           )}
         </Pressable>
       </View>
@@ -119,7 +119,7 @@ export default function AddProductScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.sectionLabel}>Ürün / Aksiyon Tipi</Text>
+        <Text style={styles.sectionLabel}>{t('addProductTypeLabel')}</Text>
         <View style={styles.typeRow}>
           <Pressable
             style={[styles.typeCard, productType === 'commercial' && styles.typeCardSelected]}
@@ -128,10 +128,10 @@ export default function AddProductScreen() {
           >
             <View style={[styles.radio, productType === 'commercial' && styles.radioSelected]} />
             <Text style={[styles.typeTitle, productType === 'commercial' && styles.typeTitleSelected]}>
-              TİCARİ ÜRÜN
+              {t('addProductCommercial')}
             </Text>
             <Text style={[styles.typeDesc, productType === 'commercial' && styles.typeDescSelected]}>
-              Cilt, saç, tırnak veya vücut bakımı, takviye
+              {t('addProductCommercialDesc')}
             </Text>
           </Pressable>
           <Pressable
@@ -141,41 +141,41 @@ export default function AddProductScreen() {
           >
             <View style={[styles.radio, productType === 'other' && styles.radioSelected]} />
             <Text style={[styles.typeTitle, productType === 'other' && styles.typeTitleSelected]}>
-              DİĞER
+              {t('addProductOther')}
             </Text>
             <Text style={[styles.typeDesc, productType === 'other' && styles.typeDescSelected]}>
-              Aktivite, DIY, fitness, hobi, öğrenme, ev işi
+              {t('addProductOtherDesc')}
             </Text>
           </Pressable>
         </View>
 
         <View style={styles.formCard}>
-          <Text style={styles.fieldLabel}>Kategori:</Text>
+          <Text style={styles.fieldLabel}>{t('addProductCategory')}</Text>
           <Pressable
             style={styles.dropdown}
             onPress={() => setShowCategoryPicker(true)}
             disabled={loading}
           >
             <Text style={[styles.dropdownText, !selectedCategory && styles.dropdownPlaceholder]}>
-              {selectedCategory?.name ?? 'Yok'}
+              {selectedCategory?.name ?? t('addProductNone')}
             </Text>
             <ChevronDown size={18} color={Colors.textSecondary} />
           </Pressable>
 
-          <Text style={styles.fieldLabel}>Marka / Şirket:</Text>
+          <Text style={styles.fieldLabel}>{t('addProductBrand')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Marka adı..."
+            placeholder={t('addProductBrandPlaceholder')}
             placeholderTextColor={Colors.textSecondary}
             value={companyName}
             onChangeText={setCompanyName}
             editable={!loading}
           />
 
-          <Text style={styles.fieldLabel}>Ad:</Text>
+          <Text style={styles.fieldLabel}>{t('addProductName')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Ürün adı..."
+            placeholder={t('addProductNamePlaceholder')}
             placeholderTextColor={Colors.textSecondary}
             value={name}
             onChangeText={setName}
@@ -184,7 +184,7 @@ export default function AddProductScreen() {
 
           <View style={styles.privacyRow}>
             <Lock size={18} color={Colors.textSecondary} />
-            <Text style={styles.privacyText}>Gizli yap (sadece siz arayıp takip edebilirsiniz)</Text>
+            <Text style={styles.privacyText}>{t('addProductPrivacy')}</Text>
             <Switch
               value={isPrivate}
               onValueChange={setIsPrivate}
@@ -195,7 +195,7 @@ export default function AddProductScreen() {
         </View>
 
         <Text style={styles.ratingQuestion}>
-          Bu ürünü zaten denediniz mi? Evetse nasıl puanlarsınız?
+          {t('addProductRatingQuestion')}
         </Text>
         <View style={styles.starsRow}>
           {[1, 2, 3, 4, 5].map((n) => (
@@ -219,8 +219,8 @@ export default function AddProductScreen() {
           onPress={() => setAdditionalExpanded(!additionalExpanded)}
         >
           <View>
-            <Text style={styles.additionalTitle}>EK BİLGİ</Text>
-            <Text style={styles.additionalSub}>Zorunlu değil. İstediğinizi ekleyin :)</Text>
+            <Text style={styles.additionalTitle}>{t('addProductAdditional')}</Text>
+            <Text style={styles.additionalSub}>{t('addProductAdditionalSub')}</Text>
           </View>
           <ChevronDown
             size={20}
@@ -231,12 +231,12 @@ export default function AddProductScreen() {
         {additionalExpanded && (
           <View style={styles.additionalCard}>
             {!selectedCategory && (
-              <Text style={styles.additionalHint}>* Önce kategori seçin</Text>
+              <Text style={styles.additionalHint}>{t('addProductSelectCategoryFirst')}</Text>
             )}
-            <Text style={styles.fieldLabel}>İçerik / Notlar</Text>
+            <Text style={styles.fieldLabel}>{t('addProductIngredients')}</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
-              placeholder="İçerik listesi veya notlar"
+              placeholder={t('addProductIngredientsPlaceholder')}
               placeholderTextColor={Colors.textSecondary}
               value={ingredients}
               onChangeText={setIngredients}
@@ -244,7 +244,7 @@ export default function AddProductScreen() {
               multiline
               numberOfLines={3}
             />
-            <Text style={styles.fieldLabel}>Görsel URL</Text>
+            <Text style={styles.fieldLabel}>{t('addProductImageUrl')}</Text>
             <TextInput
               style={styles.input}
               placeholder="https://..."
@@ -267,9 +267,9 @@ export default function AddProductScreen() {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowCategoryPicker(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Kategori Seçin</Text>
+            <Text style={styles.modalTitle}>{t('addProductModalTitle')}</Text>
             <FlatList
-              data={[{ id: '', name: 'Yok' }, ...categories]}
+              data={[{ id: '', name: t('addProductNone') }, ...categories]}
               keyExtractor={(item) => item.id || 'none'}
               renderItem={({ item }) => (
                 <Pressable
@@ -284,7 +284,7 @@ export default function AddProductScreen() {
               )}
             />
             <Pressable style={styles.modalClose} onPress={() => setShowCategoryPicker(false)}>
-              <Text style={styles.modalCloseText}>Kapat</Text>
+              <Text style={styles.modalCloseText}>{t('addProductModalClose')}</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -310,21 +310,23 @@ const styles = StyleSheet.create({
   },
   headerBtn: {
     minWidth: 64,
-    alignItems: 'flex-start',
-  },
-  headerCancel: {
-    fontSize: 16,
-    color: Colors.textSecondary,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    backgroundColor: Colors.primary,
+    padding: 10,
+    borderRadius: 10,
+    textAlign: 'center',
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: Colors.text,
   },
   headerSubmit: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.primary,
+    textAlign: 'center',
+    color: Colors.white,
   },
   scroll: {
     flex: 1,

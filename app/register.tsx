@@ -13,9 +13,11 @@ import {
 import { useRouter, Link } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/Colors';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,15 +25,15 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email.trim() || !password || !confirmPassword) {
-      Alert.alert('Hata', 'Tüm alanları doldurunuz.');
+      Alert.alert(t('error'), t('fillAllFields'));
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Hata', 'Şifreler eşleşmiyor.');
+      Alert.alert(t('error'), t('passwordsDontMatch'));
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır.');
+      Alert.alert(t('error'), t('passwordMinLength'));
       return;
     }
     setLoading(true);
@@ -41,13 +43,13 @@ export default function RegisterScreen() {
     });
     setLoading(false);
     if (error) {
-      Alert.alert('Kayıt hatası', error.message);
+      Alert.alert(t('error'), error.message);
       return;
     }
     if (data.user && !data.session) {
       Alert.alert(
-        'E-posta doğrulama',
-        'Kayıt başarılı. E-posta adresinize gelen link ile hesabınızı doğrulayın.'
+        t('emailVerification'),
+        t('registerSuccessVerify')
       );
       router.replace('/login');
       return;
@@ -65,7 +67,7 @@ export default function RegisterScreen() {
       <View style={styles.form}>
         <TextInput
           style={styles.input}
-          placeholder="E-posta"
+          placeholder={t('email')}
           placeholderTextColor={Colors.textSecondary}
           value={email}
           onChangeText={setEmail}
@@ -76,7 +78,7 @@ export default function RegisterScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Şifre (min. 6 karakter)"
+          placeholder={t('passwordPlaceholder')}
           placeholderTextColor={Colors.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -85,7 +87,7 @@ export default function RegisterScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Şifre tekrar"
+          placeholder={t('confirmPassword')}
           placeholderTextColor={Colors.textSecondary}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -100,13 +102,13 @@ export default function RegisterScreen() {
           {loading ? (
             <ActivityIndicator color={Colors.buttonText} />
           ) : (
-            <Text style={styles.buttonText}>Kayıt Ol</Text>
+            <Text style={styles.buttonText}>{t('register')}</Text>
           )}
         </Pressable>
         <Link href="/login" asChild>
           <Pressable style={styles.link} disabled={loading}>
             <Text style={styles.linkText}>
-              Zaten hesabınız var mı? <Text style={styles.linkBold}>Giriş yapın</Text>
+              {t('haveAccount')}<Text style={styles.linkBold}>{t('loginLink')}</Text>
             </Text>
           </Pressable>
         </Link>

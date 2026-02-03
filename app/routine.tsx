@@ -25,22 +25,16 @@ import { getLogForDate, upsertLogForDate, isValidUuid } from '../lib/routine-log
 import { getProductsByIds } from '../lib/products';
 import type { RoutineStep, RoutineType } from '../types/routine';
 import { Colors } from '../constants/Colors';
+import { useLanguage } from '../context/LanguageContext';
 
 import { Sun, Moon, Sparkles, Check, Plus, Zap, BarChart3, Bell, LayoutGrid, ChevronUp, ChevronDown } from 'lucide-react-native';
-
-const ROUTINE_TYPES: { key: RoutineType; label: string; Icon: typeof Sun }[] = [
-  { key: 'AM', label: 'Sabah', Icon: Sun },
-  { key: 'PM', label: 'Akşam', Icon: Moon },
-];
-
-const DAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
 /** Seçilen tarihin bulunduğu haftanın Pazartesi'sinden itibaren 7 gün döner. */
-function getWeekDays(centerDate: string): { date: string; dayNum: number; label: string }[] {
+function getWeekDays(centerDate: string, dayLabels: string[]): { date: string; dayNum: number; label: string }[] {
   const d = new Date(centerDate + 'T12:00:00');
   const dayOfWeek = d.getDay(); // 0 Pazar, 1 Pazartesi, ...
   const toMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -48,7 +42,7 @@ function getWeekDays(centerDate: string): { date: string; dayNum: number; label:
   const result: { date: string; dayNum: number; label: string }[] = [];
   for (let i = 0; i < 7; i++) {
     const iso = d.toISOString().slice(0, 10);
-    result.push({ date: iso, dayNum: parseInt(iso.slice(8, 10), 10), label: DAY_LABELS[i] });
+    result.push({ date: iso, dayNum: parseInt(iso.slice(8, 10), 10), label: dayLabels[i] ?? '' });
     d.setDate(d.getDate() + 1);
   }
   return result;
@@ -57,7 +51,14 @@ function getWeekDays(centerDate: string): { date: string; dayNum: number; label:
 export default function RoutineScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState<string>(() => todayISO());
+
+  const ROUTINE_TYPES: { key: RoutineType; label: string; Icon: typeof Sun }[] = [
+    { key: 'AM', label: t('routineMorning'), Icon: Sun },
+    { key: 'PM', label: t('routineEvening'), Icon: Moon },
+  ];
+  const DAY_LABELS = [t('dayMon'), t('dayTue'), t('dayWed'), t('dayThu'), t('dayFri'), t('daySat'), t('daySun')];
   const [activeTab, setActiveTab] = useState<RoutineType>('AM');
   const [routineId, setRoutineId] = useState<string | null>(null);
   const [steps, setSteps] = useState<RoutineStep[]>([]);
@@ -85,7 +86,7 @@ export default function RoutineScreen() {
         await upsertLogForDate(uid, rid, selectedDate, ids);
       } catch (e) {
         console.error(e);
-        Alert.alert('Hata', 'Tamamlama kaydedilemedi.');
+        Alert.alert(t('error'), t('saveCompletionFailed'));
       }
     },
     [selectedDate]
@@ -127,7 +128,7 @@ export default function RoutineScreen() {
         }
       } catch (e) {
         console.error(e);
-        Alert.alert('Hata', 'Rutin yüklenemedi.');
+        Alert.alert(t('error'), t('loadRoutineFailed'));
       } finally {
         setLoading(false);
       }
@@ -173,7 +174,7 @@ export default function RoutineScreen() {
         await reorderRoutineSteps(routineId, reordered.map((s) => s.id));
       } catch (e) {
         console.error(e);
-        Alert.alert('Hata', 'Sıra kaydedilemedi.');
+        Alert.alert(t('error'), t('saveOrderFailed'));
       }
     },
     [routineId, userId]
@@ -200,10 +201,10 @@ export default function RoutineScreen() {
 
   const handleDeleteStep = (stepId: string) => {
     if (!routineId) return;
-    Alert.alert('Adımı sil', 'Bu ürünü rutinden kaldırmak istiyor musunuz?', [
-      { text: 'İptal', style: 'cancel' },
+    Alert.alert(t('deleteStepTitle'), t('deleteStepMessage'), [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Sil',
+        text: t('delete'),
         style: 'destructive',
         onPress: async () => {
           if (!userId) return;
@@ -213,7 +214,7 @@ export default function RoutineScreen() {
             const nextCompleted = completedStepIds.filter((id) => id !== stepId);
             await saveCompletedSteps(userId, routineId, nextCompleted);
           } catch (e) {
-            Alert.alert('Hata', 'Silinemedi.');
+            Alert.alert(t('error'), t('deleteFailed'));
           }
         },
       },
@@ -234,7 +235,7 @@ export default function RoutineScreen() {
   const totalSteps = steps.length;
   const progressPercent = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0;
 
-  const weekDays = getWeekDays(selectedDate);
+  const weekDays = getWeekDays(selectedDate, DAY_LABELS);
   const isToday = selectedDate === todayISO();
 
   if (!userId && !loading) return null;
@@ -249,7 +250,7 @@ export default function RoutineScreen() {
             <BarChart3 size={14} color={Colors.text} />
             <Text style={styles.calendarBadgeText}>0</Text>
           </View>
-          <Text style={styles.calendarTodayLabel}>{isToday ? 'Bugün' : selectedDate}</Text>
+          <Text style={styles.calendarTodayLabel}>{isToday ? t('today') : selectedDate}</Text>
           <View style={styles.calendarIcons}>
             <Pressable style={styles.calendarIconBtn} hitSlop={8}>
               <Bell size={20} color={Colors.white} />
@@ -316,10 +317,10 @@ export default function RoutineScreen() {
         >
           {totalSteps > 0 && (
             <View style={styles.progressCard}>
-              <Text style={styles.progressLabel}>İLERLEME</Text>
+              <Text style={styles.progressLabel}>{t('progress')}</Text>
               <View style={styles.progressRow}>
                 <Text style={styles.progressText}>
-                  {completedCount} / {totalSteps} adım tamamlandı
+                  {completedCount} / {totalSteps} {t('stepsCompleted')}
                 </Text>
                 <Text style={styles.progressPercent}>{progressPercent}%</Text>
               </View>
@@ -333,7 +334,7 @@ export default function RoutineScreen() {
           <View style={styles.emptyCard}>
             <Sparkles size={40} color={Colors.textSecondary} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyText}>
-              Henüz ürün eklemediniz. + ile ekleyin.
+              {t('routineEmpty')}
             </Text>
           </View>
         </ScrollView>
@@ -346,10 +347,10 @@ export default function RoutineScreen() {
           ListHeaderComponent={
             totalSteps > 0 ? (
               <View style={styles.progressCard}>
-                <Text style={styles.progressLabel}>İLERLEME</Text>
+                <Text style={styles.progressLabel}>{t('progress')}</Text>
                 <View style={styles.progressRow}>
                   <Text style={styles.progressText}>
-                    {completedCount} / {totalSteps} adım tamamlandı
+                    {completedCount} / {totalSteps} {t('stepsCompleted')}
                   </Text>
                   <Text style={styles.progressPercent}>{progressPercent}%</Text>
                 </View>
@@ -403,7 +404,7 @@ export default function RoutineScreen() {
                   <View style={styles.stepBody}>
                     <Text style={styles.stepName}>{step.name}</Text>
                     <Text style={styles.stepDesc} numberOfLines={1}>
-                      {step.description || 'Ürün'} • Adım {index + 1}
+                      {step.description || t('product')} • {t('step')} {index + 1}
                     </Text>
                   </View>
                   <Pressable

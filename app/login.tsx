@@ -13,16 +13,18 @@ import {
 import { useRouter, Link } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/Colors';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      Alert.alert('Hata', 'E-posta ve şifre giriniz.');
+      Alert.alert(t('error'), t('errorEnterEmailPassword'));
       return;
     }
     setLoading(true);
@@ -32,7 +34,7 @@ export default function LoginScreen() {
     });
     setLoading(false);
     if (error) {
-      Alert.alert('Giriş hatası', error.message);
+      Alert.alert(t('loginError'), error.message);
       return;
     }
     if (data.session) {
@@ -48,7 +50,7 @@ export default function LoginScreen() {
       <View style={styles.form}>
         <TextInput
           style={styles.input}
-          placeholder="E-posta"
+          placeholder={t('email')}
           placeholderTextColor={Colors.textSecondary}
           value={email}
           onChangeText={setEmail}
@@ -59,7 +61,7 @@ export default function LoginScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Şifre"
+          placeholder={t('password')}
           placeholderTextColor={Colors.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -74,13 +76,13 @@ export default function LoginScreen() {
           {loading ? (
             <ActivityIndicator color={Colors.buttonText} />
           ) : (
-            <Text style={styles.buttonText}>Giriş Yap</Text>
+            <Text style={styles.buttonText}>{t('login')}</Text>
           )}
         </Pressable>
         <Link href="/register" asChild>
           <Pressable style={styles.link} disabled={loading}>
             <Text style={styles.linkText}>
-              Hesabınız yok mu? <Text style={styles.linkBold}>Kayıt olun</Text>
+              {t('noAccount')}<Text style={styles.linkBold}>{t('registerLink')}</Text>
             </Text>
           </Pressable>
         </Link>

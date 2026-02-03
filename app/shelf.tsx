@@ -19,17 +19,19 @@ import { getShelfBadge } from '../lib/shelf-badge';
 import type { UserProductWithProduct, UserProductStatus } from '../types/user-product';
 import { getProductBrandDisplay } from '../types/product';
 import { Colors } from '../constants/Colors';
-
-const TABS: { key: UserProductStatus; label: string }[] = [
-  { key: 'opened', label: 'Rafım' },
-  { key: 'wishlist', label: 'İstek Listesi' },
-  { key: 'empty', label: 'Bitenler' },
-];
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ShelfScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<UserProductStatus>('opened');
+
+  const TABS: { key: UserProductStatus; label: string }[] = [
+    { key: 'opened', label: t('shelfMyShelf') },
+    { key: 'wishlist', label: t('shelfWishlist') },
+    { key: 'empty', label: t('shelfEmpty') },
+  ];
   const [items, setItems] = useState<UserProductWithProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -41,11 +43,11 @@ export default function ShelfScreen() {
       setItems(list);
     } catch (e) {
       console.error(e);
-      Alert.alert('Hata', 'Liste yüklenemedi.');
+      Alert.alert(t('error'), t('shelfLoadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -65,36 +67,36 @@ export default function ShelfScreen() {
   );
 
   const handleCardLongPress = (item: UserProductWithProduct) => {
-    const productName = item.products?.name ?? 'Ürün';
+    const productName = item.products?.name ?? t('product');
     const buttons: Array<{ text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }> = [
-      { text: 'İptal', style: 'cancel' },
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Listeden çıkar',
+        text: t('shelfRemove'),
         style: 'destructive',
         onPress: async () => {
           try {
             await removeFromShelf(item.id);
             setItems((prev) => prev.filter((i) => i.id !== item.id));
           } catch (e) {
-            Alert.alert('Hata', 'Kaldırılamadı.');
+            Alert.alert(t('error'), t('shelfRemoveFailed'));
           }
         },
       },
     ];
     if (item.status === 'opened') {
       buttons.splice(1, 0, {
-        text: 'Bitenlere taşı',
+        text: t('shelfMoveToEmpty'),
         onPress: async () => {
           try {
             await updateUserProduct(item.id, { status: 'empty' });
             setItems((prev) => prev.filter((i) => i.id !== item.id));
           } catch (e) {
-            Alert.alert('Hata', 'Güncellenemedi.');
+            Alert.alert(t('error'), t('shelfUpdateFailed'));
           }
         },
       });
     }
-    Alert.alert(productName, 'Ne yapmak istiyorsunuz?', buttons);
+    Alert.alert(productName, t('shelfWhatToDo'), buttons);
   };
 
   const renderCard = ({ item }: { item: UserProductWithProduct }) => {
@@ -103,6 +105,7 @@ export default function ShelfScreen() {
     const brand = getProductBrandDisplay(product);
 
     const badge = getShelfBadge(
+      t,
       item.expiration_date,
       item.date_opened,
       item.status
@@ -163,7 +166,7 @@ export default function ShelfScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Rafım</Text>
+        <Text style={styles.title}>{t('shelfMyShelf')}</Text>
       </View>
 
       <View style={styles.tabs}>
@@ -208,12 +211,12 @@ export default function ShelfScreen() {
             <View style={styles.empty}>
               <Package size={48} color={Colors.textSecondary} style={{ marginBottom: 16 }} />
               <Text style={styles.emptyText}>
-                {activeTab === 'opened' && 'Henüz rafınızda ürün yok.'}
-                {activeTab === 'wishlist' && 'İstek listeniz boş.'}
-                {activeTab === 'empty' && 'Biten ürün yok.'}
+                {activeTab === 'opened' && t('shelfEmptyOpened')}
+                {activeTab === 'wishlist' && t('shelfEmptyWishlist')}
+                {activeTab === 'empty' && t('shelfEmptyFinished')}
               </Text>
               <Text style={styles.emptySubtext}>
-                Ürünler sayfasından ekleyin.
+                {t('shelfAddFromProducts')}
               </Text>
             </View>
           }
@@ -225,7 +228,7 @@ export default function ShelfScreen() {
         onPress={() => router.push('/(tabs)/products')}
       >
         <Plus size={20} color={Colors.white} />
-        <Text style={styles.fabText}>Ürün Ekle</Text>
+        <Text style={styles.fabText}>{t('shelfAddProduct')}</Text>
       </Pressable>
     </View>
   );

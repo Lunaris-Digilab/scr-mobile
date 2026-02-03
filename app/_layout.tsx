@@ -4,62 +4,76 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { Colors } from '../constants/Colors';
+import { LanguageProvider, useLanguage } from '../context/LanguageContext';
 
-export default function RootLayout() {
+function StackScreens() {
+  const { t } = useLanguage();
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: Colors.headerBackground },
-          headerTintColor: Colors.headerTint,
-          headerTitleStyle: { fontWeight: '600' },
-          contentStyle: { backgroundColor: Colors.background },
-          headerShadowVisible: false, // Optional: for cleaner look
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: Colors.headerBackground },
+        headerTintColor: Colors.headerTint,
+        headerTitleStyle: { fontWeight: '600' },
+        contentStyle: { backgroundColor: Colors.background },
+        headerShadowVisible: false,
+      }}
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="(tabs)"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="login"
+        options={{
+          title: t('login'),
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: Colors.background },
         }}
-      >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+      />
+      <Stack.Screen
+        name="register"
+        options={{
+          title: t('register'),
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: Colors.background },
+        }}
+      />
         <Stack.Screen
-          name="(tabs)"
+          name="language"
           options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="login"
-          options={{ 
-            title: 'Giriş Yap', 
-            headerBackTitle: 'Geri',
-            headerStyle: { backgroundColor: Colors.background }, // Match background
-          }}
-        />
-        <Stack.Screen
-          name="register"
-          options={{ 
-            title: 'Kayıt Ol', 
-            headerBackTitle: 'Geri',
-            headerStyle: { backgroundColor: Colors.background },
-          }}
         />
         <Stack.Screen
           name="routine/add-step"
           options={{
-            title: 'Ürün Ekle',
+            title: t('addProductTitle'),
             headerStyle: { backgroundColor: Colors.headerBackground },
             headerTintColor: Colors.headerTint,
             headerTitleStyle: { fontWeight: '600', color: Colors.headerTint },
-            headerBackTitle: 'Geri',
+            headerBackTitle: t('productsAddBack'),
           }}
         />
         <Stack.Screen
           name="products/add"
           options={{
-            title: 'Ürün Ekle',
+            title: '',
             headerStyle: { backgroundColor: Colors.headerBackground },
             headerTintColor: Colors.headerTint,
             headerTitleStyle: { fontWeight: '600', color: Colors.headerTint },
-            headerBackTitle: 'Geri',
+            headerBackTitle: t('productsAddBack'),
           }}
         />
-      </Stack>
-      <StatusBar style="dark" />
-    </GestureHandlerRootView>
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <LanguageProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <StackScreens />
+        <StatusBar style="dark" />
+      </GestureHandlerRootView>
+    </LanguageProvider>
   );
 }

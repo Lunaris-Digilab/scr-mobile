@@ -6,14 +6,17 @@ import {
   Pressable,
   ActivityIndicator,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Settings, Pencil, LogOut, TrendingUp } from 'lucide-react-native';
+import { Settings, Pencil, LogOut, TrendingUp, ChevronRight } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
 import { getRoutineLogDaysCount } from '../../lib/routine-logs';
 import { getUserProducts } from '../../lib/user-products';
 import { Colors } from '../../constants/Colors';
+import { useLanguage } from '../../context/LanguageContext';
+import { LOCALE_OPTIONS, type Locale } from '../../constants/translations';
 
 type UserProfile = {
   email: string | null;
@@ -23,25 +26,27 @@ type UserProfile = {
   productsCount: number;
 };
 
-const SKIN_PROFILE_ROWS: { key: string; label: string; value: string }[] = [
-  { key: 'concerns', label: 'Birincil Endişeler', value: 'Akne, Leke' },
-  { key: 'sensitivity', label: 'Hassasiyet', value: 'Hassas' },
-  { key: 'climate', label: 'İklim', value: 'Nemli / Tropikal' },
-  { key: 'allergies', label: 'Alerjiler', value: 'Paraben, Parfüm' },
+const SKIN_PROFILE_ROWS: { key: string; labelKey: 'primaryConcerns' | 'sensitivity' | 'climate' | 'allergies'; valueKey: 'acneSpot' | 'sensitive' | 'humidTropical' | 'parabensFragrance' }[] = [
+  { key: 'concerns', labelKey: 'primaryConcerns', valueKey: 'acneSpot' },
+  { key: 'sensitivity', labelKey: 'sensitivity', valueKey: 'sensitive' },
+  { key: 'climate', labelKey: 'climate', valueKey: 'humidTropical' },
+  { key: 'allergies', labelKey: 'allergies', valueKey: 'parabensFragrance' },
 ];
 
-function formatMemberSince(createdAt: string | null): string {
+function formatMemberSince(createdAt: string | null, memberSinceText: string): string {
   if (!createdAt) return '—';
   const d = new Date(createdAt);
   const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-  return `${months[d.getMonth()]} ${d.getFullYear()} tarihinden beri üye`;
+  return `${months[d.getMonth()]} ${d.getFullYear()} ${memberSinceText}`;
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t, locale, setLocale } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -96,6 +101,8 @@ export default function ProfileScreen() {
     );
   }
 
+  const currentLocaleLabel = LOCALE_OPTIONS.find((o) => o.value === (locale ?? 'tr'))?.nativeLabel ?? 'Türkçe';
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
@@ -105,7 +112,7 @@ export default function ProfileScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerIcon} />
-          <Text style={styles.headerTitle}>User Profile</Text>
+          <Text style={styles.headerTitle}>{t('userProfile')}</Text>
           <Pressable style={styles.headerIcon} hitSlop={12}>
             <Settings size={22} color={Colors.text} />
           </Pressable>
@@ -118,28 +125,36 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <Text style={styles.displayName}>{profile.displayName}</Text>
-          <Text style={styles.skinType}>Cilt tipi ekleyin</Text>
-          <Text style={styles.memberSince}>{formatMemberSince(profile.createdAt)}</Text>
+          <Text style={styles.skinType}>{t('addSkinType')}</Text>
+          <Text style={styles.memberSince}>{formatMemberSince(profile.createdAt, t('memberSince'))}</Text>
         </View>
+
+        <Pressable style={styles.languageRow} onPress={() => setLanguageModalVisible(true)}>
+          <Text style={styles.languageLabel}>{t('language')}</Text>
+          <View style={styles.languageValueRow}>
+            <Text style={styles.languageValue}>{currentLocaleLabel}</Text>
+            <ChevronRight size={20} color={Colors.textSecondary} />
+          </View>
+        </Pressable>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Rutin Serisi</Text>
-            <Text style={styles.statValue}>{profile.routineStreakDays} Gün</Text>
+            <Text style={styles.statLabel}>{t('routineStreak')}</Text>
+            <Text style={styles.statValue}>{profile.routineStreakDays} {t('days')}</Text>
             <View style={styles.statTrend}>
               <TrendingUp size={12} color={Colors.primary} />
               <Text style={styles.statTrendText}>+2%</Text>
             </View>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Kullanılan Ürün</Text>
+            <Text style={styles.statLabel}>{t('productsUsed')}</Text>
             <Text style={styles.statValue}>{profile.productsCount}</Text>
-            <Text style={styles.statTrendText}>+ bu hafta</Text>
+            <Text style={styles.statTrendText}>{t('thisWeek')}</Text>
           </View>
         </View>
 
         <View style={styles.skinSection}>
-          <Text style={styles.sectionTitle}>Cilt Profilim</Text>
+          <Text style={styles.sectionTitle}>{t('skinProfile')}</Text>
           <View style={styles.skinCard}>
             {SKIN_PROFILE_ROWS.map((row, index) => (
               <View
@@ -149,8 +164,8 @@ export default function ProfileScreen() {
                   index === SKIN_PROFILE_ROWS.length - 1 && styles.skinRowLast,
                 ]}
               >
-                <Text style={styles.skinLabel}>{row.label}</Text>
-                <Text style={styles.skinValue}>{row.value}</Text>
+                <Text style={styles.skinLabel}>{t(row.labelKey)}</Text>
+                <Text style={styles.skinValue}>{t(row.valueKey)}</Text>
               </View>
             ))}
           </View>
@@ -158,14 +173,43 @@ export default function ProfileScreen() {
 
         <Pressable style={styles.updateButton}>
           <Pencil size={18} color={Colors.white} />
-          <Text style={styles.updateButtonText}>Profil Anketini Güncelle</Text>
+          <Text style={styles.updateButtonText}>{t('updateProfileSurvey')}</Text>
         </Pressable>
 
         <Pressable style={styles.logOutButton} onPress={handleSignOut}>
           <LogOut size={18} color={Colors.error} />
-          <Text style={styles.logOutText}>Çıkış Yap</Text>
+          <Text style={styles.logOutText}>{t('signOut')}</Text>
         </Pressable>
       </ScrollView>
+
+      <Modal
+        visible={languageModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('changeLanguage')}</Text>
+            {LOCALE_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.value}
+                style={[styles.modalOption, (locale ?? 'tr') === opt.value && styles.modalOptionSelected]}
+                onPress={async () => {
+                  await setLocale(opt.value as Locale);
+                  setLanguageModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalOptionNative}>{opt.nativeLabel}</Text>
+                <Text style={styles.modalOptionEnglish}>{opt.label}</Text>
+              </Pressable>
+            ))}
+            <Pressable style={styles.modalClose} onPress={() => setLanguageModalVisible(false)}>
+              <Text style={styles.modalCloseText}>OK</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -236,6 +280,29 @@ const styles = StyleSheet.create({
   },
   memberSince: {
     fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.lightGray,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  languageLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  languageValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  languageValue: {
+    fontSize: 15,
     color: Colors.textSecondary,
   },
   statsRow: {
@@ -336,5 +403,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.error,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.card,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  modalOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
+  },
+  modalOptionSelected: {
+    backgroundColor: Colors.light,
+  },
+  modalOptionNative: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  modalOptionEnglish: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  modalClose: {
+    marginTop: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });
