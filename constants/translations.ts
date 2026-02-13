@@ -35,6 +35,7 @@ const translations: TranslationMap = {
   confirmPassword: { en: 'Confirm password', de: 'Passwort bestätigen', es: 'Confirmar contraseña', tr: 'Şifre tekrar' },
   passwordPlaceholder: { en: 'Password (min. 6 characters)', de: 'Passwort (min. 6 Zeichen)', es: 'Contraseña (mín. 6 caracteres)', tr: 'Şifre (min. 6 karakter)' },
   registerError: { en: 'Registration error', de: 'Registrierungsfehler', es: 'Error de registro', tr: 'Kayıt hatası' },
+  serverUnavailable: { en: 'Server is temporarily unavailable. Please try again in a few minutes.', de: 'Der Server ist vorübergehend nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut.', es: 'El servidor no está disponible temporalmente. Inténtelo de nuevo en unos minutos.', tr: 'Sunucu şu an geçici olarak kullanılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.' },
   emailVerification: { en: 'Email verification', de: 'E-Mail-Bestätigung', es: 'Verificación de correo', tr: 'E-posta doğrulama' },
   registerSuccessVerify: { en: 'Registration successful. Verify your account via the link sent to your email.', de: 'Registrierung erfolgreich. Bestätigen Sie Ihr Konto über den Link in Ihrer E-Mail.', es: 'Registro exitoso. Verifique su cuenta mediante el enlace enviado a su correo.', tr: 'Kayıt başarılı. E-posta adresinize gelen link ile hesabınızı doğrulayın.' },
   haveAccount: { en: 'Already have an account? ', de: 'Bereits ein Konto? ', es: '¿Ya tiene cuenta? ', tr: 'Zaten hesabınız var mı? ' },

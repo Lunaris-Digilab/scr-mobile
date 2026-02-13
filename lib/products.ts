@@ -25,8 +25,12 @@ export async function getProducts(options?: {
   if (options?.brand?.trim()) {
     query = query.ilike('brand', `%${options.brand.trim()}%`);
   }
-  if (options?.limit) query = query.limit(options.limit);
-  if (options?.offset) query = query.range(options.offset, options.offset + (options.limit ?? 50) - 1);
+  const limit = options?.limit ?? 50;
+  if (options?.offset != null) {
+    query = query.range(options.offset, options.offset + limit - 1);
+  } else if (options?.limit) {
+    query = query.limit(limit);
+  }
 
   const { data, error } = await query;
   if (error) throw error;

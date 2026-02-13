@@ -32,14 +32,25 @@ const SKIN_CONCERN_KEYS = [
   'onboardingConcernGeneral',
 ] as const;
 
-function formatSkinConcernsDisplay(enLabels: string[] | undefined, t: (k: TranslationKey) => string): string {
+function getTranslatedConcerns(
+  enLabels: string[] | undefined,
+  t: (k: TranslationKey) => string
+): string[] {
+  if (!enLabels?.length) return [];
+  return enLabels.map((en) => {
+    const key = SKIN_CONCERN_KEYS.find(
+      (k) => getTranslation('en', k as TranslationKey) === en
+    );
+    return key ? t(key) : en;
+  });
+}
+
+function formatSkinConcernsDisplay(
+  enLabels: string[] | undefined,
+  t: (k: TranslationKey) => string
+): string {
   if (!enLabels?.length) return '—';
-  return enLabels
-    .map((en) => {
-      const key = SKIN_CONCERN_KEYS.find((k) => getTranslation('en', k as TranslationKey) === en);
-      return key ? t(key) : en;
-    })
-    .join(', ');
+  return getTranslatedConcerns(enLabels, t).join(', ');
 }
 
 type UserProfile = {
@@ -194,18 +205,35 @@ export default function ProfileScreen() {
           <View style={styles.skinCard}>
             {(() => {
               const rows = getSkinProfileRows();
-              return rows.map((row, index) => (
-                <View
-                  key={row.key}
-                  style={[
-                    styles.skinRow,
-                    index === rows.length - 1 && styles.skinRowLast,
-                  ]}
-                >
-                  <Text style={styles.skinLabel}>{t(row.labelKey)}</Text>
-                  <Text style={styles.skinValue}>{row.getValue(profile, t)}</Text>
-                </View>
-              ));
+              return rows.map((row, index) => {
+                const isLast = index === rows.length - 1;
+                const isConcerns = row.key === 'concerns';
+                const translatedConcerns = isConcerns
+                  ? getTranslatedConcerns(profile.skinProfile?.skin_concerns, t)
+                  : [];
+                return (
+                  <View
+                    key={row.key}
+                    style={[
+                      styles.skinRow,
+                      isLast && styles.skinRowLast,
+                    ]}
+                  >
+                    <Text style={styles.skinLabel}>{t(row.labelKey)}</Text>
+                    {isConcerns && translatedConcerns.length > 0 ? (
+                      <View style={styles.skinChipsRow}>
+                        {translatedConcerns.map((label) => (
+                          <View key={label} style={styles.skinChip}>
+                            <Text style={styles.skinChipText}>{label}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text style={styles.skinValue}>{row.getValue(profile, t)}</Text>
+                    )}
+                  </View>
+                );
+              });
             })()}
           </View>
         </View>
@@ -387,14 +415,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   skinCard: {
-    backgroundColor: Colors.lightGray,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 2,
   },
   skinRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
@@ -403,12 +434,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   skinLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
+    textTransform: 'none',
   },
   skinValue: {
+    marginTop: 4,
     fontSize: 14,
+    color: Colors.text,
+    fontWeight: '500',
+  },
+  skinChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  skinChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: Colors.lightGray,
+  },
+  skinChipText: {
+    fontSize: 13,
     color: Colors.text,
     fontWeight: '500',
   },

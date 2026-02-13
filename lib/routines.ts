@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { ensurePublicUser } from './users';
 import type { RoutineStep, RoutineType } from '../types/routine';
 
 export function generateUuid(): string {
@@ -54,9 +53,8 @@ export async function createRoutine(userId: string, type: RoutineType) {
 export async function getOrCreateRoutine(
   userId: string,
   type: RoutineType,
-  email?: string
+  _email?: string
 ) {
-  if (email) await ensurePublicUser(userId, email);
   let routine = await getRoutine(userId, type);
   if (!routine) {
     routine = await createRoutine(userId, type);

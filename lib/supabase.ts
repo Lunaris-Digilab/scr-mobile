@@ -2,7 +2,8 @@ import 'react-native-url-polyfill/auto';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+// Sunucu adresi .env'de EXPO_PUBLIC_SUPABASE_URL (örn. https://api.glowist.app)
+const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').replace(/\/$/, '');
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 // Expo Go, iOS'ta doküman yolunu ExponentExperienceData/@anonymous yapıyor;

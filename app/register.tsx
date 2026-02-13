@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { supabase } from '../lib/supabase';
-import { ensurePublicUser } from '../lib/users';
+import { saveSkinProfileToAuth } from '../lib/users';
 import { getSkinProfile, clearSkinProfile } from '../lib/onboarding';
 import { Colors } from '../constants/Colors';
 import { useLanguage } from '../context/LanguageContext';
@@ -45,7 +45,8 @@ export default function RegisterScreen() {
     });
     setLoading(false);
     if (error) {
-      Alert.alert(t('error'), error.message);
+      const is503 = String(error.message || '').includes('503') || (error as { status?: number }).status === 503;
+      Alert.alert(t('error'), is503 ? t('serverUnavailable') : error.message);
       return;
     }
     if (data.user && !data.session) {
@@ -58,7 +59,7 @@ export default function RegisterScreen() {
     }
     if (data.session && data.user) {
       const profile = await getSkinProfile();
-      await ensurePublicUser(data.user.id, email.trim(), {
+      await saveSkinProfileToAuth({
         skin_type: profile?.skin_type ?? null,
         skin_concerns: profile?.skin_concerns ?? [],
       });
