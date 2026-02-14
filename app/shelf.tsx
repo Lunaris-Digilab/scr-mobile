@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,7 @@ import { useLanguage } from '../context/LanguageContext';
 export default function ShelfScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const fabBottomOffset = insets.bottom + (Platform.OS === 'ios' ? 96 : 82);
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<UserProductStatus>('opened');
 
@@ -204,7 +206,7 @@ export default function ShelfScreen() {
           key="grid"
           contentContainerStyle={[
             styles.gridContent,
-            { paddingBottom: insets.bottom + 100 },
+            { paddingBottom: insets.bottom + 170 },
           ]}
           columnWrapperStyle={styles.gridRow}
           ListEmptyComponent={
@@ -224,7 +226,7 @@ export default function ShelfScreen() {
       )}
 
       <Pressable
-        style={[styles.fab, { bottom: insets.bottom + 24 }]}
+        style={[styles.fab, { bottom: fabBottomOffset }]}
         onPress={() => router.push('/(tabs)/products')}
       >
         <Plus size={20} color={Colors.white} />

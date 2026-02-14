@@ -4,9 +4,8 @@ import {
   Plus,
   Mic,
   ChevronDown,
+  ChevronRight,
   Bookmark,
-  CircleCheck,
-  CircleAlert,
   LayoutGrid,
 } from 'lucide-react-native';
 import {
@@ -19,8 +18,9 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { getProducts } from '../lib/products';
@@ -42,17 +42,10 @@ function getCategoryLabel(key: ProductCategory | '', t: (k: TranslationKey) => s
   return key ? t(('prodCat_' + key) as TranslationKey) : t('prodCat_all');
 }
 
-// Görseldeki "match" görünümü için: ürün indexine göre yüksek/orta/düşük gösterim
-function getMatchDisplay(index: number): { percent: number; color: string; Icon: typeof CircleCheck } {
-  const mod = index % 3;
-  if (mod === 0) return { percent: 88 + (index % 10), color: Colors.success, Icon: CircleCheck };
-  if (mod === 1) return { percent: 72 + (index % 8), color: '#ea580c', Icon: CircleCheck };
-  return { percent: 42 + (index % 10), color: Colors.error, Icon: CircleAlert };
-}
-
 export default function ProductsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const fabBottomOffset = insets.bottom + (Platform.OS === 'ios' ? 96 : 82);
   const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const CATEGORIES = CATEGORY_KEYS.map((key) => ({ key, label: getCategoryLabel(key, t) }));
@@ -83,6 +76,13 @@ export default function ProductsScreen() {
     const delay = setTimeout(loadProducts, 300);
     return () => clearTimeout(delay);
   }, [loadProducts]);
+
+  // Yeni ürün ekleyip geri dönüldüğünde listeyi yenile
+  useFocusEffect(
+    useCallback(() => {
+      loadProducts();
+    }, [loadProducts])
+  );
 
   const handleAddToRoutine = (product: Product) => {
     Alert.alert(
@@ -154,14 +154,17 @@ export default function ProductsScreen() {
     }
   };
 
+  const handleViewDetails = (product: Product) => {
+    router.push({
+      pathname: '/products/[id]',
+      params: { id: product.id },
+    });
+  };
+
   const renderProduct = ({ item, index }: { item: Product; index: number }) => {
     const isAdding = addingToRoutine === item.id;
     const isAddingShelf = addingToShelf === item.id;
-    const categoryLabel = item.category
-      ? getCategoryLabel(item.category, t)
-      : null;
-    const match = getMatchDisplay(index);
-    const MatchIcon = match.Icon;
+    const isBusy = isAdding || isAddingShelf;
 
     return (
       <View style={styles.card}>
@@ -173,7 +176,7 @@ export default function ProductsScreen() {
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.cardImagePlaceholder, { backgroundColor: index % 3 === 0 ? '#a7f3d0' : index % 3 === 1 ? '#fde68a' : Colors.lightGray }]}>
+            <View style={[styles.cardImagePlaceholder, { backgroundColor: index % 2 === 0 ? Colors.light : Colors.mediumLight }]}>
               <Text style={styles.cardImagePlaceholderText}>
                 {item.name.charAt(0)}
               </Text>
@@ -181,39 +184,26 @@ export default function ProductsScreen() {
           )}
         </View>
         <View style={styles.cardBody}>
-          <View style={styles.matchRow}>
-            <MatchIcon size={14} color={match.color} />
-            <Text style={[styles.matchText, { color: match.color }]}>
-              %{match.percent} {t('productsMatch')}
-            </Text>
-          </View>
           <Text style={styles.cardName} numberOfLines={2}>
             {item.name}
           </Text>
-          {getProductBrandDisplay(item) ? (
+          {!!getProductBrandDisplay(item) && (
             <Text style={styles.cardBrand} numberOfLines={1}>
               {getProductBrandDisplay(item)}
             </Text>
-          ) : null}
-          {categoryLabel ? (
-            <View style={styles.tagWrap}>
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>{categoryLabel.toUpperCase()}</Text>
-              </View>
-            </View>
-          ) : null}
+          )}
           <View style={styles.cardActions}>
             <Pressable
-              style={[styles.addToRoutineButton, isAdding && styles.addButtonDisabled]}
-              onPress={() => handleAddToRoutine(item)}
-              disabled={isAdding || isAddingShelf}
+              style={[styles.viewButton, isBusy && styles.addButtonDisabled]}
+              onPress={() => handleViewDetails(item)}
+              disabled={isBusy}
             >
-              {isAdding ? (
+              {isBusy ? (
                 <ActivityIndicator size="small" color={Colors.text} />
               ) : (
                 <>
-                  <Plus size={16} color={Colors.text} />
-                  <Text style={styles.addToRoutineText}>{t('productsAddToRoutine')}</Text>
+                  <Text style={styles.viewButtonText}>View Details</Text>
+                  <ChevronRight size={16} color={Colors.text} />
                 </>
               )}
             </Pressable>
@@ -304,10 +294,13 @@ export default function ProductsScreen() {
           data={products}
           keyExtractor={(item) => item.id}
           renderItem={renderProduct}
+          numColumns={2}
+          key="products-grid"
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + 100 },
+            { paddingBottom: insets.bottom + 170 },
           ]}
+          columnWrapperStyle={styles.gridRow}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyText}>{t('productsNoResults')}</Text>
@@ -320,7 +313,7 @@ export default function ProductsScreen() {
       )}
 
       <Pressable
-        style={[styles.fab, { bottom: insets.bottom + 24 }]}
+        style={[styles.fab, { bottom: fabBottomOffset }]}
         onPress={() => router.push('/products/add')}
       >
         <Plus size={20} color={Colors.white} />
@@ -418,8 +411,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingTop: 4,
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   empty: {
     paddingVertical: 48,
@@ -435,23 +432,25 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   card: {
-    flexDirection: 'row',
+    width: '48.2%',
     backgroundColor: Colors.card,
-    borderRadius: 12,
-    marginBottom: 14,
-    overflow: 'hidden',
+    borderRadius: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   cardImageWrap: {
-    width: 88,
-    height: 88,
-    margin: 14,
-    borderRadius: 44,
+    width: '100%',
+    aspectRatio: 1.12,
+    borderRadius: 14,
     overflow: 'hidden',
+    backgroundColor: Colors.lightGray,
+    marginBottom: 10,
   },
   cardImage: {
     width: '100%',
@@ -470,82 +469,49 @@ const styles = StyleSheet.create({
     color: Colors.gray,
   },
   cardBody: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingRight: 14,
-    paddingLeft: 0,
-    justifyContent: 'space-between',
     minWidth: 0,
-  },
-  matchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  matchText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   cardName: {
     fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 2,
-  },
-  cardBrand: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginBottom: 6,
-  },
-  tagWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 10,
-  },
-  tag: {
-    backgroundColor: Colors.lightGray,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  tagText: {
-    fontSize: 10,
     fontWeight: '600',
     color: Colors.text,
+    marginBottom: 4,
+  },
+  cardBrand: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 10,
   },
   cardActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  addToRoutineButton: {
+  viewButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.light,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    backgroundColor: Colors.medium,
+    paddingVertical: 9,
+    borderRadius: 999,
     gap: 6,
   },
   addButtonDisabled: {
     opacity: 0.7,
   },
-  addToRoutineText: {
-    fontSize: 13,
+  viewButtonText: {
+    fontSize: 14,
     fontWeight: '600',
     color: Colors.text,
   },
   bookmarkButton: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.light,
-    borderRadius: 10,
+    borderRadius: 19,
   },
   fab: {
     position: 'absolute',

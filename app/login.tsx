@@ -48,44 +48,51 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder={t('email')}
-          placeholderTextColor={Colors.textSecondary}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!loading}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder={t('password')}
-          placeholderTextColor={Colors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-        />
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={Colors.buttonText} />
-          ) : (
-            <Text style={styles.buttonText}>{t('login')}</Text>
-          )}
-        </Pressable>
-        <Link href="/register" asChild>
-          <Pressable style={styles.link} disabled={loading}>
-            <Text style={styles.linkText}>
-              {t('noAccount')}<Text style={styles.linkBold}>{t('registerLink')}</Text>
-            </Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.badge}>{t('login')}</Text>
+          <Text style={styles.title}>{t('login')}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <TextInput
+            style={styles.input}
+            placeholder={t('email')}
+            placeholderTextColor={Colors.textSecondary}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t('password')}
+            placeholderTextColor={Colors.textSecondary}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!loading}
+          />
+          <Pressable
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.buttonText} />
+            ) : (
+              <Text style={styles.buttonText}>{t('login')}</Text>
+            )}
           </Pressable>
-        </Link>
+          <Link href="/register" asChild>
+            <Pressable style={styles.link} disabled={loading}>
+              <Text style={styles.linkText}>
+                {t('noAccount')}<Text style={styles.linkBold}>{t('registerLink')}</Text>
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -103,22 +110,56 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     alignSelf: 'center',
   },
+  titleWrap: {
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.light,
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: Colors.text,
+    letterSpacing: 0.2,
+  },
+  card: {
+    backgroundColor: Colors.card,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#8f5c74',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 3,
+  },
   input: {
     backgroundColor: Colors.inputBackground,
     borderWidth: 1,
     borderColor: Colors.inputBorder,
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 14,
     color: Colors.text,
     fontSize: 16,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   button: {
     backgroundColor: Colors.buttonBackground,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -129,7 +170,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   link: {
-    marginTop: 24,
+    marginTop: 18,
     alignItems: 'center',
   },
   linkText: {

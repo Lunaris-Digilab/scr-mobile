@@ -10,6 +10,7 @@ import {
   Alert,
   Image,
   FlatList,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,6 +52,7 @@ function getWeekDays(centerDate: string, dayLabels: string[]): { date: string; d
 export default function RoutineScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const fabBottomOffset = insets.bottom + (Platform.OS === 'ios' ? 96 : 82);
   const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState<string>(() => todayISO());
 
@@ -252,10 +254,13 @@ export default function RoutineScreen() {
           </View>
           <Text style={styles.calendarTodayLabel}>{isToday ? t('today') : selectedDate}</Text>
           <View style={styles.calendarIcons}>
-            <Pressable style={styles.calendarIconBtn} hitSlop={8}>
+            <Pressable
+              style={styles.calendarIconBtn}
+              hitSlop={8}
+              onPress={() => router.push('/reminder-settings')}
+            >
               <Bell size={20} color={Colors.white} />
             </Pressable>
-          
           </View>
         </View>
         <View style={styles.weekRow}>
@@ -312,7 +317,7 @@ export default function RoutineScreen() {
       ) : steps.length === 0 ? (
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 170 }]}
           showsVerticalScrollIndicator={false}
         >
           {totalSteps > 0 && (
@@ -343,7 +348,7 @@ export default function RoutineScreen() {
           data={[...steps].sort((a, b) => a.order - b.order)}
           keyExtractor={(item) => item.id}
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 170 }]}
           ListHeaderComponent={
             totalSteps > 0 ? (
               <View style={styles.progressCard}>
@@ -430,7 +435,7 @@ export default function RoutineScreen() {
       <Pressable
         style={[
           styles.fab,
-          { bottom: insets.bottom + 24 },
+          { bottom: fabBottomOffset },
           !routineId && styles.fabDisabled,
         ]}
         onPress={() => {
