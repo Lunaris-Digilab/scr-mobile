@@ -4,8 +4,22 @@ import type { Company } from '../types/company';
 export async function getCompanies(): Promise<Company[]> {
   const { data, error } = await supabase
     .from('companies')
-    .select('id, name, created_at')
+    .select('*')
     .order('name', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Company[];
+}
+
+/** Marka ara (autocomplete için) */
+export async function searchCompanies(query: string): Promise<Company[]> {
+  const term = query.trim();
+  if (!term) return [];
+  const { data, error } = await supabase
+    .from('companies')
+    .select('*')
+    .ilike('name', `%${term}%`)
+    .order('name')
+    .limit(15);
   if (error) throw error;
   return (data ?? []) as Company[];
 }
@@ -15,7 +29,7 @@ export async function getCompanyByName(name: string): Promise<Company | null> {
   if (!trimmed) return null;
   const { data, error } = await supabase
     .from('companies')
-    .select('id, name, created_at')
+    .select('*')
     .ilike('name', trimmed)
     .maybeSingle();
   if (error) throw error;
@@ -30,7 +44,7 @@ export async function createCompany(name: string): Promise<Company> {
   const { data, error } = await supabase
     .from('companies')
     .insert({ name: trimmed })
-    .select('id, name, created_at')
+    .select('*')
     .single();
   if (error) throw error;
   return data as Company;

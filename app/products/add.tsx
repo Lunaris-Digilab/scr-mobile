@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,11 +17,14 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { createProduct } from '../../lib/products';
 import { getCategories } from '../../lib/categories';
+import { searchCompanies, getOrCreateCompany } from '../../lib/companies';
 import { addStepToRoutine } from '../../lib/routines';
 import type { Category } from '../../types/category';
+import type { Company } from '../../types/company';
+import type { ProductTexture, UsageTime, SizeUnit, TargetArea } from '../../types/product';
 import { Colors } from '../../constants/Colors';
 import { useLanguage } from '../../context/LanguageContext';
-import { ChevronDown, Lock, Star } from 'lucide-react-native';
+import { ChevronDown, Lock, Star, Search, Plus } from 'lucide-react-native';
 
 type ProductType = 'commercial' | 'other';
 
@@ -32,7 +35,14 @@ export default function AddProductScreen() {
   const [productType, setProductType] = useState<ProductType>('commercial');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [companyName, setCompanyName] = useState('');
+
+  // Brand picker state
+  const [brandSearch, setBrandSearch] = useState('');
+  const [brandResults, setBrandResults] = useState<Company[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<Company | null>(null);
+  const [showBrandPicker, setShowBrandPicker] = useState(false);
+  const [brandLoading, setBrandLoading] = useState(false);
+
   const [name, setName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [rating, setRating] = useState<number>(0);
@@ -43,12 +53,61 @@ export default function AddProductScreen() {
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
+  // New skincare fields
+  const [description, setDescription] = useState('');
+  const [sizeValue, setSizeValue] = useState('');
+  const [sizeUnit, setSizeUnit] = useState<SizeUnit>('ml');
+  const [texture, setTexture] = useState<ProductTexture | ''>('');
+  const [usageTime, setUsageTime] = useState<UsageTime | ''>('');
+  const [spf, setSpf] = useState('');
+  const [shelfLifeMonths, setShelfLifeMonths] = useState('');
+  const [targetArea, setTargetArea] = useState<TargetArea | ''>('');
+  const [isCrueltyFree, setIsCrueltyFree] = useState(false);
+  const [isVegan, setIsVegan] = useState(false);
+  const [isFragranceFree, setIsFragranceFree] = useState(false);
+  const [isParabenFree, setIsParabenFree] = useState(false);
+  const [isAlcoholFree, setIsAlcoholFree] = useState(false);
+
   useEffect(() => {
     getCategories()
       .then(setCategories)
       .catch(() => setCategories([]))
       .finally(() => setLoadingCategories(false));
   }, []);
+
+  // Brand search debounce
+  useEffect(() => {
+    if (!brandSearch.trim()) { setBrandResults([]); return; }
+    setBrandLoading(true);
+    const timer = setTimeout(() => {
+      searchCompanies(brandSearch.trim())
+        .then(setBrandResults)
+        .catch(() => setBrandResults([]))
+        .finally(() => setBrandLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [brandSearch]);
+
+  const handleSelectBrand = (company: Company) => {
+    setSelectedBrand(company);
+    setBrandSearch(company.name);
+    setShowBrandPicker(false);
+  };
+
+  const handleAddNewBrand = async () => {
+    const trimmed = brandSearch.trim();
+    if (!trimmed) return;
+    setBrandLoading(true);
+    try {
+      const company = await getOrCreateCompany(trimmed);
+      if (company) {
+        setSelectedBrand(company);
+        setBrandSearch(company.name);
+      }
+    } catch { /* ignore */ }
+    setBrandLoading(false);
+    setShowBrandPicker(false);
+  };
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
@@ -62,12 +121,26 @@ export default function AddProductScreen() {
     try {
       const product = await createProduct({
         name: trimmedName,
-        company_name: companyName.trim() || undefined,
+        company_id: selectedBrand?.id ?? undefined,
+        company_name: !selectedBrand ? brandSearch.trim() || undefined : undefined,
         category_id: categoryId ?? undefined,
+        description: description.trim() || undefined,
         ingredients_text: ingredients.trim() || undefined,
         image_url: imageUrl.trim() || undefined,
         is_private: isPrivate,
         rating: rating > 0 ? rating : undefined,
+        size_value: sizeValue ? parseFloat(sizeValue) : undefined,
+        size_unit: sizeValue ? sizeUnit : undefined,
+        texture: texture || undefined,
+        usage_time: usageTime || undefined,
+        spf: spf ? parseInt(spf, 10) : undefined,
+        shelf_life_months: shelfLifeMonths ? parseInt(shelfLifeMonths, 10) : undefined,
+        target_area: targetArea || undefined,
+        is_cruelty_free: isCrueltyFree || undefined,
+        is_vegan: isVegan || undefined,
+        is_fragrance_free: isFragranceFree || undefined,
+        is_paraben_free: isParabenFree || undefined,
+        is_alcohol_free: isAlcoholFree || undefined,
       });
 
       // Eğer rutin sayfasından açıldıysa, ürünü rutine ekle
@@ -163,14 +236,16 @@ export default function AddProductScreen() {
           </Pressable>
 
           <Text style={styles.fieldLabel}>{t('addProductBrand')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('addProductBrandPlaceholder')}
-            placeholderTextColor={Colors.textSecondary}
-            value={companyName}
-            onChangeText={setCompanyName}
-            editable={!loading}
-          />
+          <Pressable
+            style={styles.dropdown}
+            onPress={() => setShowBrandPicker(true)}
+            disabled={loading}
+          >
+            <Text style={[styles.dropdownText, !selectedBrand && !brandSearch && styles.dropdownPlaceholder]}>
+              {selectedBrand?.name ?? (brandSearch || t('addProductBrandPlaceholder'))}
+            </Text>
+            <Search size={18} color={Colors.textSecondary} />
+          </Pressable>
 
           <Text style={styles.fieldLabel}>{t('addProductName')}</Text>
           <TextInput
@@ -230,10 +305,120 @@ export default function AddProductScreen() {
         </Pressable>
         {additionalExpanded && (
           <View style={styles.additionalCard}>
-            {!selectedCategory && (
-              <Text style={styles.additionalHint}>{t('addProductSelectCategoryFirst')}</Text>
-            )}
-            <Text style={styles.fieldLabel}>{t('addProductIngredients')}</Text>
+            <Text style={styles.fieldLabel}>{t('addProductDescription')}</Text>
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              placeholder={t('addProductDescriptionPlaceholder')}
+              placeholderTextColor={Colors.textSecondary}
+              value={description}
+              onChangeText={setDescription}
+              editable={!loading}
+              multiline
+              numberOfLines={2}
+            />
+
+            <View style={styles.rowFields}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>{t('addProductSize')}</Text>
+                <View style={styles.sizeRow}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="50"
+                    placeholderTextColor={Colors.textSecondary}
+                    value={sizeValue}
+                    onChangeText={setSizeValue}
+                    keyboardType="numeric"
+                    editable={!loading}
+                  />
+                  <View style={styles.unitPicker}>
+                    {(['ml', 'g', 'oz'] as SizeUnit[]).map((u) => (
+                      <Pressable
+                        key={u}
+                        style={[styles.unitBtn, sizeUnit === u && styles.unitBtnActive]}
+                        onPress={() => setSizeUnit(u)}
+                      >
+                        <Text style={[styles.unitBtnText, sizeUnit === u && styles.unitBtnTextActive]}>{u}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.fieldLabel}>SPF</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="30"
+                  placeholderTextColor={Colors.textSecondary}
+                  value={spf}
+                  onChangeText={setSpf}
+                  keyboardType="numeric"
+                  editable={!loading}
+                />
+              </View>
+            </View>
+
+            <Text style={styles.fieldLabel}>{t('addProductTexture')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {(['cream', 'gel', 'liquid', 'foam', 'oil', 'serum', 'lotion', 'mist', 'balm', 'other'] as ProductTexture[]).map((tx) => (
+                <Pressable
+                  key={tx}
+                  style={[styles.chip, texture === tx && styles.chipActive]}
+                  onPress={() => setTexture(texture === tx ? '' : tx)}
+                >
+                  <Text style={[styles.chipText, texture === tx && styles.chipTextActive]}>{tx}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.fieldLabel}>{t('addProductUsageTime')}</Text>
+            <View style={styles.chipRow}>
+              {([['AM', t('routineMorning')], ['PM', t('routineEvening')], ['both', t('addProductBothAmPm')]] as [UsageTime, string][]).map(([v, label]) => (
+                <Pressable
+                  key={v}
+                  style={[styles.chip, usageTime === v && styles.chipActive]}
+                  onPress={() => setUsageTime(usageTime === v ? '' : v)}
+                >
+                  <Text style={[styles.chipText, usageTime === v && styles.chipTextActive]}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.fieldLabel}>{t('addProductTargetArea')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+              {(['face', 'eye', 'lip', 'body', 'hand', 'hair', 'scalp'] as TargetArea[]).map((a) => (
+                <Pressable
+                  key={a}
+                  style={[styles.chip, targetArea === a && styles.chipActive]}
+                  onPress={() => setTargetArea(targetArea === a ? '' : a)}
+                >
+                  <Text style={[styles.chipText, targetArea === a && styles.chipTextActive]}>{a}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{t('addProductCertifications')}</Text>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Cruelty-Free</Text>
+              <Switch value={isCrueltyFree} onValueChange={setIsCrueltyFree} trackColor={{ false: Colors.lightGray, true: Colors.medium }} thumbColor={Colors.white} />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Vegan</Text>
+              <Switch value={isVegan} onValueChange={setIsVegan} trackColor={{ false: Colors.lightGray, true: Colors.medium }} thumbColor={Colors.white} />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Fragrance-Free</Text>
+              <Switch value={isFragranceFree} onValueChange={setIsFragranceFree} trackColor={{ false: Colors.lightGray, true: Colors.medium }} thumbColor={Colors.white} />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Paraben-Free</Text>
+              <Switch value={isParabenFree} onValueChange={setIsParabenFree} trackColor={{ false: Colors.lightGray, true: Colors.medium }} thumbColor={Colors.white} />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Alcohol-Free</Text>
+              <Switch value={isAlcoholFree} onValueChange={setIsAlcoholFree} trackColor={{ false: Colors.lightGray, true: Colors.medium }} thumbColor={Colors.white} />
+            </View>
+
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{t('addProductIngredients')}</Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
               placeholder={t('addProductIngredientsPlaceholder')}
@@ -284,6 +469,59 @@ export default function AddProductScreen() {
               )}
             />
             <Pressable style={styles.modalClose} onPress={() => setShowCategoryPicker(false)}>
+              <Text style={styles.modalCloseText}>{t('addProductModalClose')}</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Brand Picker Modal */}
+      <Modal
+        visible={showBrandPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBrandPicker(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowBrandPicker(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('addProductBrandSelect')}</Text>
+            <View style={styles.brandSearchWrap}>
+              <Search size={18} color={Colors.textSecondary} />
+              <TextInput
+                style={styles.brandSearchInput}
+                placeholder={t('addProductBrandPlaceholder')}
+                placeholderTextColor={Colors.textSecondary}
+                value={brandSearch}
+                onChangeText={(text) => { setBrandSearch(text); setSelectedBrand(null); }}
+                autoFocus
+              />
+              {brandLoading && <ActivityIndicator size="small" color={Colors.primary} />}
+            </View>
+            <FlatList
+              data={brandResults}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <Pressable style={styles.modalItem} onPress={() => handleSelectBrand(item)}>
+                  <Text style={styles.modalItemText}>{item.name}</Text>
+                </Pressable>
+              )}
+              ListHeaderComponent={
+                brandSearch.trim() && !brandResults.find((b) => b.name.toLowerCase() === brandSearch.trim().toLowerCase()) ? (
+                  <Pressable style={[styles.modalItem, styles.brandAddNew]} onPress={handleAddNewBrand}>
+                    <Plus size={16} color={Colors.primary} />
+                    <Text style={[styles.modalItemText, { color: Colors.primary, marginLeft: 8 }]}>
+                      "{brandSearch.trim()}" {t('addProductBrandAddNew')}
+                    </Text>
+                  </Pressable>
+                ) : null
+              }
+              ListEmptyComponent={
+                !brandLoading && brandSearch.trim() ? (
+                  <Text style={styles.brandEmptyText}>{t('productsNoResults')}</Text>
+                ) : null
+              }
+            />
+            <Pressable style={styles.modalClose} onPress={() => setShowBrandPicker(false)}>
               <Text style={styles.modalCloseText}>{t('addProductModalClose')}</Text>
             </Pressable>
           </View>
@@ -521,5 +759,108 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.primary,
+  },
+  // Brand picker
+  brandSearchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
+  },
+  brandSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.text,
+    padding: 0,
+  },
+  brandAddNew: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light,
+  },
+  brandEmptyText: {
+    padding: 16,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+  },
+  // Skincare fields
+  rowFields: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  sizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  unitPicker: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  unitBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  unitBtnActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  unitBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  unitBtnTextActive: {
+    color: Colors.white,
+  },
+  chipScroll: {
+    flexGrow: 0,
+    marginBottom: 8,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  chipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.text,
+  },
+  chipTextActive: {
+    color: Colors.white,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  switchLabel: {
+    fontSize: 14,
+    color: Colors.text,
   },
 });

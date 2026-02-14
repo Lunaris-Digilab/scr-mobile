@@ -7,7 +7,7 @@ import { Typography } from '../../constants/Typography';
 export default function TabLayout() {
   return (
     <Tabs
-      initialRouteName="shelf"
+      initialRouteName="routine"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.tabIconSelected,

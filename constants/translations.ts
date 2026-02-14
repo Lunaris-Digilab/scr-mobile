@@ -213,6 +213,16 @@ const translations: TranslationMap = {
   addProductSavedOnly: { en: 'Product added.', de: 'Produkt hinzugefügt.', es: 'Producto añadido.', tr: 'Ürün eklendi.' },
   addProductOk: { en: 'OK', de: 'OK', es: 'OK', tr: 'Tamam' },
   addProductSaveFailed: { en: 'Could not add product.', de: 'Produkt konnte nicht hinzugefügt werden.', es: 'No se pudo añadir el producto.', tr: 'Ürün eklenemedi.' },
+  addProductBrandSelect: { en: 'Select Brand', de: 'Marke wählen', es: 'Seleccionar marca', tr: 'Marka Seçin' },
+  addProductBrandAddNew: { en: 'add as new brand', de: 'als neue Marke', es: 'añadir como nueva marca', tr: 'yeni marka olarak ekle' },
+  addProductDescription: { en: 'Description', de: 'Beschreibung', es: 'Descripción', tr: 'Açıklama' },
+  addProductDescriptionPlaceholder: { en: 'Product description...', de: 'Produktbeschreibung...', es: 'Descripción del producto...', tr: 'Ürün açıklaması...' },
+  addProductSize: { en: 'Size', de: 'Größe', es: 'Tamaño', tr: 'Boyut' },
+  addProductTexture: { en: 'Texture', de: 'Textur', es: 'Textura', tr: 'Doku' },
+  addProductUsageTime: { en: 'Usage Time', de: 'Anwendungszeit', es: 'Hora de uso', tr: 'Kullanım Zamanı' },
+  addProductBothAmPm: { en: 'Both', de: 'Beides', es: 'Ambos', tr: 'Her ikisi' },
+  addProductTargetArea: { en: 'Target Area', de: 'Zielbereich', es: 'Zona objetivo', tr: 'Hedef Bölge' },
+  addProductCertifications: { en: 'Certifications', de: 'Zertifizierungen', es: 'Certificaciones', tr: 'Sertifikalar' },
 
   // Reminder / Notification
   reminderTitle: { en: 'Reminders', de: 'Erinnerungen', es: 'Recordatorios', tr: 'Hatırlatmalar' },
