@@ -26,6 +26,10 @@ const translations: TranslationMap = {
   noAccount: { en: "Don't have an account? ", de: 'Noch kein Konto? ', es: '¿No tiene cuenta? ', tr: 'Hesabınız yok mu? ' },
   registerLink: { en: 'Sign up', de: 'Registrieren', es: 'Registrarse', tr: 'Kayıt olun' },
 
+  // Google / Social auth
+  continueWithGoogle: { en: 'Continue with Google', de: 'Mit Google fortfahren', es: 'Continuar con Google', tr: 'Google ile devam et' },
+  or: { en: 'or', de: 'oder', es: 'o', tr: 'veya' },
+
   // Register
   register: { en: 'Sign up', de: 'Registrieren', es: 'Registrarse', tr: 'Kayıt Ol' },
   registerTitle: { en: 'Sign up', de: 'Registrieren', es: 'Registrarse', tr: 'Kayıt Ol' },

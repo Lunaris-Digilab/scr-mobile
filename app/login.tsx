@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { supabase } from '../lib/supabase';
+import { signInWithGoogle, isGoogleSignInAvailable } from '../lib/google-auth';
+import GoogleIcon from '../components/GoogleIcon';
 import { Colors } from '../constants/Colors';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -21,6 +23,10 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleAvailable = useMemo(() => isGoogleSignInAvailable(), []);
+
+  const isLoading = loading || googleLoading;
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -42,6 +48,18 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    const result = await signInWithGoogle();
+    setGoogleLoading(false);
+
+    if (result.success) {
+      router.replace('/');
+    } else if (!result.cancelled) {
+      Alert.alert(t('loginError'), result.message);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -54,6 +72,37 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.card}>
+          {/* Google ile giriş butonu — sadece native build'de göster */}
+          {googleAvailable && (
+            <>
+              <Pressable
+                style={[styles.googleButton, isLoading && styles.buttonDisabled]}
+                onPress={handleGoogleLogin}
+                disabled={isLoading}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator color={Colors.text} />
+                ) : (
+                  <>
+                    <View style={styles.googleIcon}>
+                      <GoogleIcon size={20} />
+                    </View>
+                    <Text style={styles.googleButtonText}>
+                      {t('continueWithGoogle')}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+
+              {/* Ayırıcı */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>{t('or')}</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            </>
+          )}
+
           <TextInput
             style={styles.input}
             placeholder={t('email')}
@@ -63,7 +112,7 @@ export default function LoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-            editable={!loading}
+            editable={!isLoading}
           />
           <TextInput
             style={styles.input}
@@ -72,12 +121,12 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            editable={!loading}
+            editable={!isLoading}
           />
           <Pressable
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={isLoading}
           >
             {loading ? (
               <ActivityIndicator color={Colors.buttonText} />
@@ -86,7 +135,7 @@ export default function LoginScreen() {
             )}
           </Pressable>
           <Link href="/register" asChild>
-            <Pressable style={styles.link} disabled={loading}>
+            <Pressable style={styles.link} disabled={isLoading}>
               <Text style={styles.linkText}>
                 {t('noAccount')}<Text style={styles.linkBold}>{t('registerLink')}</Text>
               </Text>
@@ -143,6 +192,40 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 16,
     elevation: 3,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.inputBackground,
+    borderWidth: 1,
+    borderColor: Colors.inputBorder,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  googleIcon: {
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    marginHorizontal: 12,
   },
   input: {
     backgroundColor: Colors.inputBackground,
