@@ -36,6 +36,19 @@ npx eas-cli secret:create --name EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID --value "YOUR_
 npx eas-cli secret:create --name EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID --value "YOUR_IOS_CLIENT_ID" --type string
 ```
 
+**APK açılmıyorsa (hemen kapanıyorsa):**
+
+1. **Ortam değişkenleri:** EAS’ta yukarıdaki secret’lar tanımlı olmalı. Eksikse uygulama açılırken çökebilir. Expo dashboard → proje → Secrets bölümünden kontrol edin.
+2. **Android crash log:** Telefonu USB ile bilgisayara bağlayıp (USB hata ayıklama açık) şunu çalıştırın:
+   ```bash
+   adb logcat *:E | head -100
+   ```
+   veya sadece uygulama logları:
+   ```bash
+   adb logcat | grep -i "ReactNative\|Expo\|glowist\|FATAL"
+   ```
+   Çıkan hata mesajı nedeni (native veya JS) gösterecektir.
+
 ---
 
 ## 2. Yerel derleme (Java JDK gerekir)

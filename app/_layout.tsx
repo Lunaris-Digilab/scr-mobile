@@ -8,6 +8,7 @@ import { useFonts, DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSa
 import { Colors } from '../constants/Colors';
 import { Typography } from '../constants/Typography';
 import { LanguageProvider, useLanguage } from '../context/LanguageContext';
+import { RootErrorBoundary } from '../components/RootErrorBoundary';
 import { supabase } from '../lib/supabase';
 import { syncAllReminders } from '../lib/reminder-settings';
 
@@ -126,11 +127,13 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontLoadError) return null;
 
   return (
-    <LanguageProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <StackScreens />
-        <StatusBar style="dark" />
-      </GestureHandlerRootView>
-    </LanguageProvider>
+    <RootErrorBoundary>
+      <LanguageProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <StackScreens />
+          <StatusBar style="dark" />
+        </GestureHandlerRootView>
+      </LanguageProvider>
+    </RootErrorBoundary>
   );
 }
