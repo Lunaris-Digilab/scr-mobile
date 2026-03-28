@@ -1,16 +1,26 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Package, Plus } from 'lucide-react-native';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Package, Plus, Trash2, Archive } from 'lucide-react-native';
 import {
   StyleSheet,
   Text,
   View,
   Pressable,
   FlatList,
-  ActivityIndicator,
-  Alert,
   Image,
   Platform,
+  type LayoutChangeEvent,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -19,8 +29,55 @@ import { getUserProducts, removeFromShelf, updateUserProduct } from '../lib/user
 import { getShelfBadge } from '../lib/shelf-badge';
 import type { UserProductWithProduct, UserProductStatus } from '../types/user-product';
 import { getProductBrandDisplay } from '../types/product';
-import { Colors } from '../constants/Colors';
+import { Colors, Shadows } from '../constants/Colors';
+import { Typography } from '../constants/Typography';
 import { useLanguage } from '../context/LanguageContext';
+import { AnimatedCard } from '../components/AnimatedCard';
+import { ShelfGridSkeleton } from '../components/Skeleton';
+import { BottomSheet, type BottomSheetAction } from '../components/BottomSheet';
+import { haptic } from '../lib/haptics';
+
+/* ---------- Animated Badge Pulse ---------- */
+function PulseBadge({ text, isWarning }: { text: string; isWarning: boolean }) {
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    if (isWarning) {
+      pulse.value = withRepeat(
+        withSequence(
+          withTiming(0.7, { duration: 800 }),
+          withTiming(1, { duration: 800 })
+        ),
+        -1,
+        true
+      );
+    }
+  }, [isWarning]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: isWarning ? pulse.value : 1,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        styles.badge,
+        isWarning ? styles.badgeWarning : styles.badgeNormal,
+        pulseStyle,
+      ]}
+    >
+      <Text
+        style={[
+          styles.badgeText,
+          isWarning ? styles.badgeTextWarning : styles.badgeTextNormal,
+        ]}
+        numberOfLines={1}
+      >
+        {text}
+      </Text>
+    </Animated.View>
+  );
+}
 
 export default function ShelfScreen() {
   const router = useRouter();
@@ -34,22 +91,59 @@ export default function ShelfScreen() {
     { key: 'wishlist', label: t('shelfWishlist') },
     { key: 'empty', label: t('shelfEmpty') },
   ];
+
   const [items, setItems] = useState<UserProductWithProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-  const loadShelf = useCallback(async (uid: string, status: UserProductStatus) => {
-    try {
-      setLoading(true);
-      const list = await getUserProducts(uid, status);
-      setItems(list);
-    } catch (e) {
-      console.error(e);
-      Alert.alert(t('error'), t('shelfLoadFailed'));
-    } finally {
-      setLoading(false);
+  // Bottom sheet state
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetItem, setSheetItem] = useState<UserProductWithProduct | null>(null);
+
+  // Animated tab indicator
+  const tabPositions = useRef<number[]>([]);
+  const tabWidths = useRef<number[]>([]);
+  const indicatorLeft = useSharedValue(0);
+  const indicatorWidth = useSharedValue(60);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    left: indicatorLeft.value,
+    width: indicatorWidth.value,
+  }));
+
+  const handleTabLayout = (index: number, e: LayoutChangeEvent) => {
+    const { x, width } = e.nativeEvent.layout;
+    tabPositions.current[index] = x;
+    tabWidths.current[index] = width;
+    const tabIdx = TABS.findIndex((t) => t.key === activeTab);
+    if (index === tabIdx) {
+      indicatorLeft.value = x;
+      indicatorWidth.value = width;
     }
-  }, [t]);
+  };
+
+  useEffect(() => {
+    const idx = TABS.findIndex((t) => t.key === activeTab);
+    if (tabPositions.current[idx] !== undefined) {
+      indicatorLeft.value = withSpring(tabPositions.current[idx], { damping: 18, stiffness: 120 });
+      indicatorWidth.value = withSpring(tabWidths.current[idx], { damping: 18, stiffness: 120 });
+    }
+  }, [activeTab]);
+
+  const loadShelf = useCallback(
+    async (uid: string, status: UserProductStatus) => {
+      try {
+        setLoading(true);
+        const list = await getUserProducts(uid, status);
+        setItems(list);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -69,97 +163,98 @@ export default function ShelfScreen() {
   );
 
   const handleCardLongPress = (item: UserProductWithProduct) => {
-    const productName = item.products?.name ?? t('product');
-    const buttons: Array<{ text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }> = [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('shelfRemove'),
-        style: 'destructive',
+    haptic.medium();
+    setSheetItem(item);
+    setSheetVisible(true);
+  };
+
+  const getSheetActions = (): BottomSheetAction[] => {
+    if (!sheetItem) return [];
+    const actions: BottomSheetAction[] = [];
+
+    if (sheetItem.status === 'opened') {
+      actions.push({
+        label: t('shelfMoveToEmpty'),
+        icon: <Archive size={18} color={Colors.text} />,
+        variant: 'default',
         onPress: async () => {
           try {
-            await removeFromShelf(item.id);
-            setItems((prev) => prev.filter((i) => i.id !== item.id));
+            await updateUserProduct(sheetItem.id, { status: 'empty' });
+            setItems((prev) => prev.filter((i) => i.id !== sheetItem.id));
           } catch (e) {
-            Alert.alert(t('error'), t('shelfRemoveFailed'));
-          }
-        },
-      },
-    ];
-    if (item.status === 'opened') {
-      buttons.splice(1, 0, {
-        text: t('shelfMoveToEmpty'),
-        onPress: async () => {
-          try {
-            await updateUserProduct(item.id, { status: 'empty' });
-            setItems((prev) => prev.filter((i) => i.id !== item.id));
-          } catch (e) {
-            Alert.alert(t('error'), t('shelfUpdateFailed'));
+            console.error(e);
           }
         },
       });
     }
-    Alert.alert(productName, t('shelfWhatToDo'), buttons);
+
+    actions.push({
+      label: t('shelfRemove'),
+      icon: <Trash2 size={18} color={Colors.error} />,
+      variant: 'destructive',
+      onPress: async () => {
+        try {
+          await removeFromShelf(sheetItem.id);
+          setItems((prev) => prev.filter((i) => i.id !== sheetItem.id));
+        } catch (e) {
+          console.error(e);
+        }
+      },
+    });
+
+    actions.push({
+      label: t('cancel'),
+      variant: 'default',
+      onPress: () => {},
+    });
+
+    return actions;
   };
 
-  const renderCard = ({ item }: { item: UserProductWithProduct }) => {
+  const renderCard = ({ item, index }: { item: UserProductWithProduct; index: number }) => {
     const product = item.products;
     if (!product) return null;
     const brand = getProductBrandDisplay(product);
-
-    const badge = getShelfBadge(
-      t,
-      item.expiration_date,
-      item.date_opened,
-      item.status
-    );
+    const badge = getShelfBadge(t, item.expiration_date, item.date_opened, item.status);
 
     return (
-      <Pressable
-        style={styles.card}
-        onLongPress={() => handleCardLongPress(item)}
+      <Animated.View
+        entering={FadeInDown.delay(index * 50).duration(400)}
+        style={{ width: '48%' }}
       >
-        <View style={styles.cardImageWrap}>
-          {product.image_url ? (
-            <Image
-              source={{ uri: product.image_url }}
-              style={styles.cardImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.cardImagePlaceholder}>
-              <Text style={styles.cardImagePlaceholderText}>
-                {product.name.charAt(0)}
+        <AnimatedCard
+          style={styles.card}
+          onPress={() => router.push(`/products/${product.id}`)}
+          onLongPress={() => handleCardLongPress(item)}
+        >
+          <View style={styles.cardImageWrap}>
+            {product.image_url ? (
+              <Image
+                source={{ uri: product.image_url }}
+                style={styles.cardImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.cardImagePlaceholder}>
+                <Text style={styles.cardImagePlaceholderText}>
+                  {product.name.charAt(0)}
+                </Text>
+              </View>
+            )}
+            <PulseBadge text={badge.text} isWarning={badge.isWarning} />
+          </View>
+          <View style={styles.cardBody}>
+            {brand ? (
+              <Text style={styles.cardBrand} numberOfLines={1}>
+                {brand.toUpperCase()}
               </Text>
-            </View>
-          )}
-          <View
-            style={[
-              styles.badge,
-              badge.isWarning ? styles.badgeWarning : styles.badgeNormal,
-            ]}
-          >
-            <Text
-              style={[
-                styles.badgeText,
-                badge.isWarning ? styles.badgeTextWarning : styles.badgeTextNormal,
-              ]}
-              numberOfLines={1}
-            >
-              {badge.text}
+            ) : null}
+            <Text style={styles.cardName} numberOfLines={2}>
+              {product.name}
             </Text>
           </View>
-        </View>
-        <View style={styles.cardBody}>
-          {brand ? (
-            <Text style={styles.cardBrand} numberOfLines={1}>
-              {brand.toUpperCase()}
-            </Text>
-          ) : null}
-          <Text style={styles.cardName} numberOfLines={2}>
-            {product.name}
-          </Text>
-        </View>
-      </Pressable>
+        </AnimatedCard>
+      </Animated.View>
     );
   };
 
@@ -167,16 +262,22 @@ export default function ShelfScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
         <Text style={styles.title}>{t('shelfMyShelf')}</Text>
-      </View>
+      </Animated.View>
 
+      {/* Animated Tabs */}
       <View style={styles.tabs}>
-        {TABS.map(({ key, label }) => (
+        <Animated.View style={[styles.tabIndicator, indicatorStyle]} />
+        {TABS.map(({ key, label }, idx) => (
           <Pressable
             key={key}
             style={styles.tab}
-            onPress={() => setActiveTab(key)}
+            onPress={() => {
+              haptic.light();
+              setActiveTab(key);
+            }}
+            onLayout={(e) => handleTabLayout(idx, e)}
           >
             <Text
               style={[
@@ -186,16 +287,13 @@ export default function ShelfScreen() {
             >
               {label}
             </Text>
-            {activeTab === key ? (
-              <View style={styles.tabIndicator} />
-            ) : null}
           </Pressable>
         ))}
       </View>
 
       {loading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+        <View style={{ paddingTop: 16 }}>
+          <ShelfGridSkeleton />
         </View>
       ) : (
         <FlatList
@@ -209,29 +307,47 @@ export default function ShelfScreen() {
             { paddingBottom: insets.bottom + 170 },
           ]}
           columnWrapperStyle={styles.gridRow}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Package size={48} color={Colors.textSecondary} style={{ marginBottom: 16 }} />
+            <Animated.View entering={FadeInUp.duration(500)} style={styles.empty}>
+              <View style={styles.emptyIconWrap}>
+                <Package size={40} color={Colors.medium} />
+              </View>
               <Text style={styles.emptyText}>
                 {activeTab === 'opened' && t('shelfEmptyOpened')}
                 {activeTab === 'wishlist' && t('shelfEmptyWishlist')}
                 {activeTab === 'empty' && t('shelfEmptyFinished')}
               </Text>
-              <Text style={styles.emptySubtext}>
-                {t('shelfAddFromProducts')}
-              </Text>
-            </View>
+              <Text style={styles.emptySubtext}>{t('shelfAddFromProducts')}</Text>
+            </Animated.View>
           }
         />
       )}
 
-      <Pressable
+      <Animated.View
+        entering={FadeInUp.delay(300).duration(500)}
         style={[styles.fab, { bottom: fabBottomOffset }]}
-        onPress={() => router.push('/(tabs)/products')}
       >
-        <Plus size={20} color={Colors.white} />
-        <Text style={styles.fabText}>{t('shelfAddProduct')}</Text>
-      </Pressable>
+        <Pressable
+          style={styles.fabInner}
+          onPress={() => {
+            haptic.light();
+            router.push('/(tabs)/products');
+          }}
+        >
+          <Plus size={20} color={Colors.white} />
+          <Text style={styles.fabText}>{t('shelfAddProduct')}</Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* Bottom Sheet */}
+      <BottomSheet
+        visible={sheetVisible}
+        onClose={() => setSheetVisible(false)}
+        title={sheetItem?.products?.name ?? t('product')}
+        message={t('shelfWhatToDo')}
+        actions={getSheetActions()}
+      />
     </View>
   );
 }
@@ -251,43 +367,40 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.text,
   },
+
+  /* Tabs */
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     marginBottom: 4,
+    position: 'relative',
   },
   tab: {
-    position: 'relative',
     paddingVertical: 10,
     paddingHorizontal: 4,
     marginRight: 20,
   },
   tabLabel: {
     fontSize: 15,
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
-    fontWeight: '500',
   },
   tabLabelActive: {
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.primary,
   },
   tabIndicator: {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
     height: 3,
     backgroundColor: Colors.primary,
     borderRadius: 2,
   },
-  loadingWrap: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
+  /* Grid */
   gridContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -296,34 +409,39 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+
+  /* Empty */
   empty: {
-    flex: 1,
     paddingVertical: 48,
     alignItems: 'center',
   },
-  emptyIcon: {
-    fontSize: 48,
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.lightGray,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   emptyText: {
     fontSize: 16,
+    fontFamily: Typography.semibold,
     color: Colors.textSecondary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
+
+  /* Card */
   card: {
-    width: '48%',
     backgroundColor: Colors.card,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    ...Shadows.card,
   },
   cardImageWrap: {
     width: '100%',
@@ -344,7 +462,7 @@ const styles = StyleSheet.create({
   },
   cardImagePlaceholderText: {
     fontSize: 32,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.gray,
   },
   badge: {
@@ -360,11 +478,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
   },
   badgeWarning: {
-    backgroundColor: '#fecaca', // Keep as red for warning
+    backgroundColor: '#fecaca',
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
   },
   badgeTextNormal: {
     color: Colors.text,
@@ -377,19 +495,24 @@ const styles = StyleSheet.create({
   },
   cardBrand: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   cardName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.text,
   },
+
+  /* FAB */
   fab: {
     position: 'absolute',
     right: 20,
+    ...Shadows.fab,
+  },
+  fabInner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primary,
@@ -397,20 +520,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 28,
     gap: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  fabIcon: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.white,
   },
   fabText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.white,
   },
 });

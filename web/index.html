@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glowist — Your Skincare Routine, Perfected</title>
+  <meta name="description" content="AI-powered skincare routine tracker. Build daily habits, track your products, and celebrate your glow journey." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Glowist — Your Skincare Routine, Perfected" />
+  <meta property="og:description" content="AI-powered skincare routine tracker. Build daily habits, track your products, and celebrate your glow journey." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://glowist.app/og-image.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ========== NAV ========== -->
+  <nav class="nav">
+    <div class="nav-inner container">
+      <a href="#" class="nav-logo">
+        <span class="nav-logo-icon">&#10024;</span>
+        Glowist
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#download" class="nav-cta">Download</a>
+      </div>
+      <button class="nav-mobile-toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="hero-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+
+    <div class="hero-inner container">
+      <div class="hero-content">
+        <div class="hero-badge reveal">
+          <span class="hero-badge-dot"></span>
+          AI-Powered Skincare
+        </div>
+        <h1 class="hero-title reveal">
+          Your skin has a goal.<br />
+          <span class="hero-title-accent">We have the game plan.</span>
+        </h1>
+        <p class="hero-subtitle reveal">
+          Track your daily AM &amp; PM skincare routines, organize your product shelf,
+          and build streaks that keep you glowing every single day.
+        </p>
+        <div class="hero-buttons reveal">
+          <a href="#download" class="btn btn-primary btn-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+            Download Free
+          </a>
+          <a href="#features" class="btn btn-ghost btn-lg">
+            Learn More
+          </a>
+        </div>
+        <div class="hero-stats reveal">
+          <div class="hero-stat">
+            <span class="hero-stat-value">10K+</span>
+            <span class="hero-stat-label">Active Users</span>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-value">4.9</span>
+            <span class="hero-stat-label">App Rating</span>
+          </div>
+          <div class="hero-stat-divider"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-value">50K+</span>
+            <span class="hero-stat-label">Routines Tracked</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-phone reveal">
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <!-- Simulated routine screen -->
+            <div class="mock-header">
+              <div class="mock-greeting">Good Morning</div>
+              <div class="mock-streak">
+                <span class="mock-flame">&#128293;</span> 12 day streak
+              </div>
+            </div>
+            <div class="mock-progress">
+              <div class="mock-progress-ring">
+                <svg viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#ECE5E1" stroke-width="6" />
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#B4A38F" stroke-width="6"
+                    stroke-dasharray="213.6" stroke-dashoffset="53.4" stroke-linecap="round"
+                    transform="rotate(-90 40 40)" class="mock-ring-fill" />
+                </svg>
+                <span class="mock-ring-text">75%</span>
+              </div>
+              <div class="mock-progress-info">
+                <div class="mock-progress-label">Today's Progress</div>
+                <div class="mock-progress-count">3 of 4 steps done</div>
+              </div>
+            </div>
+            <div class="mock-tabs">
+              <div class="mock-tab mock-tab-active">&#9788; Morning</div>
+              <div class="mock-tab">&#9790; Evening</div>
+            </div>
+            <div class="mock-steps">
+              <div class="mock-step mock-step-done">
+                <div class="mock-step-check">&#10003;</div>
+                <div class="mock-step-info">
+                  <div class="mock-step-name done">Gentle Cleanser</div>
+                  <div class="mock-step-brand">CeraVe</div>
+                </div>
+              </div>
+              <div class="mock-step mock-step-done">
+                <div class="mock-step-check">&#10003;</div>
+                <div class="mock-step-info">
+                  <div class="mock-step-name done">Vitamin C Serum</div>
+                  <div class="mock-step-brand">The Ordinary</div>
+                </div>
+              </div>
+              <div class="mock-step mock-step-done">
+                <div class="mock-step-check">&#10003;</div>
+                <div class="mock-step-info">
+                  <div class="mock-step-name done">Moisturizer</div>
+                  <div class="mock-step-brand">La Roche-Posay</div>
+                </div>
+              </div>
+              <div class="mock-step">
+                <div class="mock-step-check empty"></div>
+                <div class="mock-step-info">
+                  <div class="mock-step-name">Sunscreen SPF50</div>
+                  <div class="mock-step-brand">Supergoop</div>
+                </div>
+                <div class="mock-swipe-hint">swipe &rarr;</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES ========== -->
+  <section id="features" class="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">Features</span>
+        <h2 class="section-title">Everything your skin needs,<br />in one beautiful app.</h2>
+        <p class="section-subtitle">Built for skincare lovers who want consistency, clarity, and a little celebration along the way.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <h3 class="feature-title">Daily Routines</h3>
+          <p class="feature-desc">Track your AM &amp; PM skincare steps with satisfying swipe-to-complete gestures and real-time progress.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon feature-icon-gold">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3 class="feature-title">Product Shelf</h3>
+          <p class="feature-desc">Organize your entire collection into opened, wishlist, and finished. Track expiration dates with smart badges.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon feature-icon-green">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h3 class="feature-title">Smart Discovery</h3>
+          <p class="feature-desc">Find products by category, search by name or ingredient, and add them to your routine in seconds.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon feature-icon-warm">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3 4 6 4 10a4 4 0 1 1-8 0c0-4 3-7 4-10z"/></svg>
+          </div>
+          <h3 class="feature-title">Streak Tracking</h3>
+          <p class="feature-desc">Build consistency with daily streaks, celebrate milestones with confetti, and never break the chain.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== HOW IT WORKS ========== -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-tag">How It Works</span>
+        <h2 class="section-title">Three steps to your best skin.</h2>
+        <p class="section-subtitle">Getting started takes less than two minutes.</p>
+      </div>
+
+      <div class="steps-row">
+        <div class="step-card reveal">
+          <div class="step-number">1</div>
+          <div class="step-icon-wrap">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <h3 class="step-title">Tell us about your skin</h3>
+          <p class="step-desc">Select your skin concerns — acne, dryness, sensitivity, and more. We personalize everything for you.</p>
+        </div>
+
+        <div class="step-connector">
+          <svg width="40" height="2" viewBox="0 0 40 2"><line x1="0" y1="1" x2="40" y2="1" stroke="#DDBB95" stroke-width="2" stroke-dasharray="6 4"/></svg>
+        </div>
+
+        <div class="step-card reveal">
+          <div class="step-number">2</div>
+          <div class="step-icon-wrap">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </div>
+          <h3 class="step-title">Build your routine</h3>
+          <p class="step-desc">Add your products to morning and evening routines. Arrange the order, set reminders, and you're ready.</p>
+        </div>
+
+        <div class="step-connector">
+          <svg width="40" height="2" viewBox="0 0 40 2"><line x1="0" y1="1" x2="40" y2="1" stroke="#DDBB95" stroke-width="2" stroke-dasharray="6 4"/></svg>
+        </div>
+
+        <div class="step-card reveal">
+          <div class="step-number">3</div>
+          <div class="step-icon-wrap">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h3 class="step-title">Track &amp; celebrate</h3>
+          <p class="step-desc">Swipe to complete steps daily. Watch your streak grow, earn celebrations, and see your glow progress.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== HIGHLIGHTS ========== -->
+  <section class="highlights">
+    <div class="container">
+      <div class="highlights-grid">
+        <div class="highlight-item reveal">
+          <div class="highlight-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div>
+            <h4 class="highlight-title">Personalized for You</h4>
+            <p class="highlight-desc">Skin profile with concerns, type, sensitivity, climate, and allergies — your routine, your way.</p>
+          </div>
+        </div>
+        <div class="highlight-item reveal">
+          <div class="highlight-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div>
+            <h4 class="highlight-title">Multi-Language</h4>
+            <p class="highlight-desc">Available in English, German, Spanish, and Turkish. More languages coming soon.</p>
+          </div>
+        </div>
+        <div class="highlight-item reveal">
+          <div class="highlight-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div>
+            <h4 class="highlight-title">Smart Reminders</h4>
+            <p class="highlight-desc">Daily push notifications for your morning and evening routines. Never miss a step again.</p>
+          </div>
+        </div>
+        <div class="highlight-item reveal">
+          <div class="highlight-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <h4 class="highlight-title">Private &amp; Secure</h4>
+            <p class="highlight-desc">Your data stays yours. Secure authentication with email, Google, or Apple sign-in.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA / DOWNLOAD ========== -->
+  <section id="download" class="cta-section">
+    <div class="cta-particles" id="ctaParticles"></div>
+    <div class="container">
+      <div class="cta-content reveal">
+        <h2 class="cta-title">Start your glow journey today.</h2>
+        <p class="cta-subtitle">Free to download. No credit card required. Your skin will thank you.</p>
+        <div class="cta-buttons">
+          <a href="#" class="store-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <div class="store-btn-text">
+              <span class="store-btn-small">Download on the</span>
+              <span class="store-btn-big">App Store</span>
+            </div>
+          </a>
+          <a href="#" class="store-btn">
+            <svg width="22" height="24" viewBox="0 0 22 24" fill="currentColor"><path d="M1.22 0L12.5 11.28 1.22 22.56c-.47-.47-.22-1.14-.22-1.68V1.68C1 1.14.75.47 1.22 0zm.78-.5L14.13 10.4l-2.77 2.76L1.5-.22c.15-.15.32-.28.5-.28zm13.63 11.78L2 22.78c-.18 0-.35-.13-.5-.28l9.86-10.36 3.27 3.14zm1.15-.56l-2.56-2.44L2.5-.5c.4-.22.9-.12 1.28.1l12.28 7.06.72 4.06z"/></svg>
+            <div class="store-btn-text">
+              <span class="store-btn-small">Get it on</span>
+              <span class="store-btn-big">Google Play</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="nav-logo-icon">&#10024;</span>
+        <span class="footer-brand-name">Glowist</span>
+      </div>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Contact</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 Glowist. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -45,8 +45,14 @@ const translations: TranslationMap = {
   haveAccount: { en: 'Already have an account? ', de: 'Bereits ein Konto? ', es: '¿Ya tiene cuenta? ', tr: 'Zaten hesabınız var mı? ' },
   loginLink: { en: 'Log in', de: 'Anmelden', es: 'Iniciar sesión', tr: 'Giriş yapın' },
 
+  // Tab bar
+  tabRoutine: { en: 'Routine', de: 'Routine', es: 'Rutina', tr: 'Rutin' },
+  tabShelf: { en: 'Shelf', de: 'Regal', es: 'Estante', tr: 'Raf' },
+  tabProducts: { en: 'Products', de: 'Produkte', es: 'Productos', tr: 'Ürünler' },
+  tabProfile: { en: 'Profile', de: 'Profil', es: 'Perfil', tr: 'Profil' },
+
   // Profile
-  userProfile: { en: 'User Profile', de: 'Benutzerprofil', es: 'Perfil de usuario', tr: 'User Profile' },
+  userProfile: { en: 'User Profile', de: 'Benutzerprofil', es: 'Perfil de usuario', tr: 'Kullanıcı Profili' },
   language: { en: 'Language', de: 'Sprache', es: 'Idioma', tr: 'Dil' },
   changeLanguage: { en: 'Change app language', de: 'App-Sprache ändern', es: 'Cambiar idioma de la app', tr: 'Uygulama dilini değiştir' },
   routineStreak: { en: 'Routine streak', de: 'Routine-Serie', es: 'Racha de rutina', tr: 'Rutin Serisi' },
@@ -122,7 +128,7 @@ const translations: TranslationMap = {
   shelfBadge_onShelf: { en: 'On shelf', de: 'Im Regal', es: 'En estante', tr: 'Rafımda' },
 
   // Products (Product Finder)
-  productsTitle: { en: 'Product Finder', de: 'Produktfinder', es: 'Buscador de productos', tr: 'Product Finder' },
+  productsTitle: { en: 'Product Finder', de: 'Produktfinder', es: 'Buscador de productos', tr: 'Ürün Bulucu' },
   productsSearchPlaceholder: { en: 'Search product, brand, ingredient...', de: 'Produkt, Marke, Inhaltsstoff suchen...', es: 'Buscar producto, marca, ingrediente...', tr: 'Ürün, marka, içerik ara...' },
   productsResults: { en: 'RESULTS', de: 'ERGEBNISSE', es: 'RESULTADOS', tr: 'SONUÇ' },
   productsLoadFailed: { en: 'Could not load products.', de: 'Produkte konnten nicht geladen werden.', es: 'No se pudieron cargar los productos.', tr: 'Ürünler yüklenemedi.' },

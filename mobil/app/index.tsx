@@ -18,14 +18,28 @@ export default function IndexScreen() {
     Promise.all([
       supabase.auth.getSession(),
       isOnboardingDone(),
-    ]).then(([{ data: { session } }, done]) => {
+    ]).then(([{ data: { session }, error }, done]) => {
       if (cancelled) return;
-      setHasSession(!!session);
+      if (error) {
+        // Invalid/expired refresh token — clear the stale session
+        supabase.auth.signOut().catch(() => {});
+        setHasSession(false);
+      } else {
+        setHasSession(!!session);
+      }
       setOnboardingDone(done);
       setSessionChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setHasSession(!!session)
+      (event, session) => {
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          // Refresh failed — stale token, force sign out
+          supabase.auth.signOut().catch(() => {});
+          setHasSession(false);
+        } else {
+          setHasSession(!!session);
+        }
+      }
     );
     return () => {
       cancelled = true;
@@ -38,7 +52,7 @@ export default function IndexScreen() {
     if (!sessionChecked || onboardingDone === null || !isReady) return;
 
     if (hasSession) {
-      router.replace('/(tabs)/shelf');
+      router.replace('/(tabs)/routine');
       return;
     }
 

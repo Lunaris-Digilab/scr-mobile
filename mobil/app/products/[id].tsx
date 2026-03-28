@@ -1,19 +1,30 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  type LayoutChangeEvent,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolation,
+  withSpring,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Ellipsis, ShoppingCart, Star, CheckCircle2 } from 'lucide-react-native';
+import { ArrowLeft, Ellipsis, ShoppingCart, Star, CheckCircle2, Sun, Moon } from 'lucide-react-native';
 
-import { Colors } from '../../constants/Colors';
+import { Colors, Shadows } from '../../constants/Colors';
+import { Typography } from '../../constants/Typography';
 import { useLanguage } from '../../context/LanguageContext';
 import type { TranslationKey } from '../../constants/translations';
 import { getProductById } from '../../lib/products';
@@ -21,6 +32,9 @@ import { getOrCreateRoutine, addStepToRoutine } from '../../lib/routines';
 import { supabase } from '../../lib/supabase';
 import type { Product, ProductCategory } from '../../types/product';
 import { getProductBrandDisplay } from '../../types/product';
+import { Skeleton } from '../../components/Skeleton';
+import { BottomSheet } from '../../components/BottomSheet';
+import { haptic } from '../../lib/haptics';
 
 type DetailTab = 'details' | 'reviews' | 'ingredients';
 
@@ -39,30 +53,84 @@ export default function ProductDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
+  const [routineSheetVisible, setRoutineSheetVisible] = useState(false);
+
+  // Parallax scroll
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const heroImageStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [-200, 0, 300],
+          [-100, 0, 100],
+          Extrapolation.CLAMP
+        ),
+      },
+      {
+        scale: interpolate(
+          scrollY.value,
+          [-200, 0],
+          [1.4, 1],
+          Extrapolation.CLAMP
+        ),
+      },
+    ],
+  }));
+
+  // Animated tab indicator
+  const tabPositions = useRef<number[]>([]);
+  const tabWidths = useRef<number[]>([]);
+  const indicatorLeft = useSharedValue(0);
+  const indicatorWidth = useSharedValue(60);
+  const TABS: { key: DetailTab; labelKey: string }[] = [
+    { key: 'details', labelKey: 'productTabDetails' },
+    { key: 'reviews', labelKey: 'productTabReviews' },
+    { key: 'ingredients', labelKey: 'productTabIngredients' },
+  ];
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    left: indicatorLeft.value,
+    width: indicatorWidth.value,
+  }));
+
+  const handleTabLayout = (index: number, e: LayoutChangeEvent) => {
+    const { x, width } = e.nativeEvent.layout;
+    tabPositions.current[index] = x;
+    tabWidths.current[index] = width;
+    const tabIdx = TABS.findIndex((tab) => tab.key === activeTab);
+    if (index === tabIdx) {
+      indicatorLeft.value = x;
+      indicatorWidth.value = width;
+    }
+  };
+
+  useEffect(() => {
+    const idx = TABS.findIndex((tab) => tab.key === activeTab);
+    if (tabPositions.current[idx] !== undefined) {
+      indicatorLeft.value = withSpring(tabPositions.current[idx], { damping: 18, stiffness: 120 });
+      indicatorWidth.value = withSpring(tabWidths.current[idx], { damping: 18, stiffness: 120 });
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (!id) {
       setLoading(false);
       return;
     }
-
     let cancelled = false;
     getProductById(id)
-      .then((data) => {
-        if (!cancelled) setProduct(data);
-      })
-      .catch((e) => {
-        console.error(e);
-        Alert.alert(t('error'), t('productLoadFailed'));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id, t]);
+      .then((data) => { if (!cancelled) setProduct(data); })
+      .catch((e) => console.error(e))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [id]);
 
   const benefits = useMemo(() => {
     if (!product?.category) {
@@ -87,55 +155,27 @@ export default function ProductDetailScreen() {
 
   const ingredients = useMemo(() => {
     if (!product?.ingredients_text?.trim()) return [];
-    return product.ingredients_text
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean);
+    return product.ingredients_text.split(',').map((p) => p.trim()).filter(Boolean);
   }, [product?.ingredients_text]);
-
-  const addToRoutine = () => {
-    if (!product) return;
-    Alert.alert(
-      t('productsAddToRoutineTitle'),
-      `${product.name} ${t('productsWhichRoutine')}`,
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('productsMorningRoutine'),
-          onPress: () => submitAddToRoutine('AM'),
-        },
-        {
-          text: t('productsEveningRoutine'),
-          onPress: () => submitAddToRoutine('PM'),
-        },
-      ]
-    );
-  };
 
   const submitAddToRoutine = async (type: 'AM' | 'PM') => {
     if (!product) return;
     try {
       setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        Alert.alert(t('error'), t('productsLoginRequired'));
-        return;
-      }
+      if (!user) return;
       const routine = await getOrCreateRoutine(user.id, type, user.email ?? undefined);
       const brandDisplay = getProductBrandDisplay(product);
       const catLabel = getCategoryLabel(product.category, t);
-
       await addStepToRoutine(routine.id, {
         name: product.name,
         description: brandDisplay ? `${brandDisplay} • ${catLabel}` : catLabel,
         order: 0,
         product_id: product.id,
       });
-
-      Alert.alert(t('productsAdded'), type === 'AM' ? t('productsAddedToMorning') : t('productsAddedToEvening'));
+      haptic.success();
     } catch (e) {
       console.error(e);
-      Alert.alert(t('error'), t('productsAddToRoutineFailed'));
     } finally {
       setSaving(false);
     }
@@ -143,8 +183,13 @@ export default function ProductDetailScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={{ padding: 20 }}>
+          <Skeleton width="100%" height={350} borderRadius={28} style={{ marginBottom: 16 }} />
+          <Skeleton width="60%" height={24} borderRadius={8} style={{ marginBottom: 8 }} />
+          <Skeleton width="40%" height={18} borderRadius={6} style={{ marginBottom: 16 }} />
+          <Skeleton width="100%" height={120} borderRadius={12} />
+        </View>
       </View>
     );
   }
@@ -164,19 +209,33 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Parallax Hero */}
         <View style={styles.heroWrap}>
           <View style={styles.heroImageWrap}>
-            {product.image_url ? (
-              <Image source={{ uri: product.image_url }} style={styles.heroImage} resizeMode="cover" />
-            ) : (
-              <View style={styles.heroPlaceholder}>
-                <Text style={styles.heroPlaceholderText}>{product.name.charAt(0)}</Text>
-              </View>
-            )}
+            <Animated.View style={[StyleSheet.absoluteFill, heroImageStyle]}>
+              {product.image_url ? (
+                <Image source={{ uri: product.image_url }} style={styles.heroImage} resizeMode="cover" />
+              ) : (
+                <View style={styles.heroPlaceholder}>
+                  <Text style={styles.heroPlaceholderText}>{product.name.charAt(0)}</Text>
+                </View>
+              )}
+            </Animated.View>
           </View>
 
-          <Pressable style={[styles.topIconButton, styles.topLeft]} onPress={() => router.back()}>
+          <Pressable
+            style={[styles.topIconButton, styles.topLeft]}
+            onPress={() => {
+              haptic.light();
+              router.back();
+            }}
+          >
             <ArrowLeft size={18} color={Colors.text} />
           </Pressable>
           <View style={styles.topRightRow}>
@@ -189,24 +248,32 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
+        {/* Animated Tabs */}
         <View style={styles.tabsRow}>
-          <Pressable style={styles.tabBtn} onPress={() => setActiveTab('details')}>
-            <Text style={[styles.tabText, activeTab === 'details' && styles.tabTextActive]}>{t('productTabDetails')}</Text>
-          </Pressable>
-          <Text style={styles.tabDivider}>|</Text>
-          <Pressable style={styles.tabBtn} onPress={() => setActiveTab('reviews')}>
-            <Text style={[styles.tabText, activeTab === 'reviews' && styles.tabTextActive]}>{t('productTabReviews')}</Text>
-          </Pressable>
-          <Text style={styles.tabDivider}>|</Text>
-          <Pressable style={styles.tabBtn} onPress={() => setActiveTab('ingredients')}>
-            <Text style={[styles.tabText, activeTab === 'ingredients' && styles.tabTextActive]}>{t('productTabIngredients')}</Text>
-          </Pressable>
+          <Animated.View style={[styles.tabIndicator, indicatorStyle]} />
+          {TABS.map((tab, idx) => (
+            <Pressable
+              key={tab.key}
+              style={styles.tabBtn}
+              onPress={() => {
+                haptic.selection();
+                setActiveTab(tab.key);
+              }}
+              onLayout={(e) => handleTabLayout(idx, e)}
+            >
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                {t(tab.labelKey as TranslationKey)}
+              </Text>
+            </Pressable>
+          ))}
         </View>
 
-        <View style={styles.contentCard}>
+        {/* Content */}
+        <Animated.View entering={FadeIn.duration(300)} style={styles.contentCard}>
           <Text style={styles.title}>{product.name}</Text>
-          <Text style={styles.brand}>{getProductBrandDisplay(product) ?? getCategoryLabel(product.category, t)}</Text>
-
+          <Text style={styles.brand}>
+            {getProductBrandDisplay(product) ?? getCategoryLabel(product.category, t)}
+          </Text>
           <View style={styles.ratingRow}>
             <View style={styles.starsRow}>
               {Array.from({ length: 5 }).map((_, idx) => (
@@ -220,49 +287,100 @@ export default function ProductDetailScreen() {
             </View>
             <Text style={styles.reviewCount}>4,245 {t('productReviewsLabel')}</Text>
           </View>
-        </View>
+        </Animated.View>
 
         <View style={styles.sectionCard}>
           {activeTab === 'details' && (
-            <>
+            <Animated.View entering={FadeInDown.duration(300)}>
               <Text style={styles.sectionTitle}>{t('productBenefits')}</Text>
-              {benefits.map((item) => (
-                <View key={item} style={styles.benefitRow}>
-                  <CheckCircle2 size={18} color={Colors.textSecondary} />
+              {benefits.map((item, i) => (
+                <Animated.View
+                  key={item}
+                  entering={FadeInDown.delay(i * 80).duration(300)}
+                  style={styles.benefitRow}
+                >
+                  <CheckCircle2 size={18} color={Colors.success} />
                   <Text style={styles.benefitText}>{item}</Text>
-                </View>
+                </Animated.View>
               ))}
-            </>
+            </Animated.View>
           )}
 
           {activeTab === 'reviews' && (
-            <Text style={styles.placeholderText}>{t('productReviewsPlaceholder')}</Text>
+            <Animated.View entering={FadeIn.duration(300)}>
+              <Text style={styles.placeholderText}>{t('productReviewsPlaceholder')}</Text>
+            </Animated.View>
           )}
 
           {activeTab === 'ingredients' && (
-            <>
+            <Animated.View entering={FadeInDown.duration(300)}>
               <Text style={styles.sectionTitle}>{t('productTabIngredients')}</Text>
               {ingredients.length === 0 ? (
                 <Text style={styles.placeholderText}>{t('productIngredientsPlaceholder')}</Text>
               ) : (
-                ingredients.map((item) => (
-                  <Text key={item} style={styles.ingredientItem}>• {item}</Text>
+                ingredients.map((item, i) => (
+                  <Animated.View
+                    key={item}
+                    entering={FadeInDown.delay(i * 40).duration(300)}
+                    style={styles.ingredientRow}
+                  >
+                    <View style={styles.ingredientDot} />
+                    <Text style={styles.ingredientItem}>{item}</Text>
+                  </Animated.View>
                 ))
               )}
-            </>
+            </Animated.View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable style={[styles.addButton, saving && styles.addButtonDisabled]} onPress={addToRoutine} disabled={saving}>
+      {/* Bottom Bar */}
+      <Animated.View
+        entering={FadeInUp.delay(300).duration(400)}
+        style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}
+      >
+        <Pressable
+          style={[styles.addButton, saving && styles.addButtonDisabled]}
+          onPress={() => {
+            haptic.light();
+            setRoutineSheetVisible(true);
+          }}
+          disabled={saving}
+        >
           {saving ? (
             <ActivityIndicator size="small" color={Colors.text} />
           ) : (
             <Text style={styles.addButtonText}>{t('productAddToRoutine')}</Text>
           )}
         </Pressable>
-      </View>
+      </Animated.View>
+
+      {/* AM/PM Bottom Sheet */}
+      <BottomSheet
+        visible={routineSheetVisible}
+        onClose={() => setRoutineSheetVisible(false)}
+        title={t('productsAddToRoutineTitle')}
+        message={product.name}
+        actions={[
+          {
+            label: t('productsMorningRoutine'),
+            icon: <Sun size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => submitAddToRoutine('AM'),
+          },
+          {
+            label: t('productsEveningRoutine'),
+            icon: <Moon size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => submitAddToRoutine('PM'),
+          },
+          {
+            label: t('cancel'),
+            variant: 'default',
+            onPress: () => {},
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -277,6 +395,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
+
+  /* Hero */
   heroWrap: {
     marginHorizontal: 14,
     marginTop: 8,
@@ -288,6 +408,7 @@ const styles = StyleSheet.create({
   heroImageWrap: {
     width: '100%',
     aspectRatio: 0.94,
+    overflow: 'hidden',
   },
   heroImage: {
     width: '100%',
@@ -302,16 +423,17 @@ const styles = StyleSheet.create({
   },
   heroPlaceholderText: {
     fontSize: 56,
+    fontFamily: Typography.bold,
     color: Colors.primary,
-    fontWeight: '700',
   },
   topIconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
+    ...Shadows.glass,
   },
   topLeft: {
     position: 'absolute',
@@ -325,6 +447,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+
+  /* Tabs */
   tabsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -332,44 +456,46 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: Colors.card,
     marginTop: 8,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: Colors.border,
+    position: 'relative',
   },
   tabBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
   },
   tabTextActive: {
     color: Colors.text,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
   },
-  tabDivider: {
-    color: Colors.textSecondary,
-    opacity: 0.75,
-    fontSize: 16,
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    height: 3,
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
   },
+
+  /* Content */
   contentCard: {
     backgroundColor: Colors.card,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderColor: Colors.border,
   },
   title: {
     fontSize: 24,
     lineHeight: 30,
+    fontFamily: Typography.bold,
     color: Colors.text,
-    fontWeight: '700',
   },
   brand: {
     marginTop: 6,
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   ratingRow: {
@@ -384,8 +510,11 @@ const styles = StyleSheet.create({
   },
   reviewCount: {
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
+
+  /* Section */
   sectionCard: {
     backgroundColor: Colors.card,
     paddingHorizontal: 20,
@@ -393,35 +522,50 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   sectionTitle: {
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 22,
+    fontFamily: Typography.bold,
     color: Colors.text,
-    fontWeight: '700',
     marginBottom: 14,
   },
   benefitRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 12,
   },
   benefitText: {
-    fontSize: 18,
-    lineHeight: 25,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     flexShrink: 1,
   },
   placeholderText: {
-    fontSize: 18,
+    fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
-    lineHeight: 26,
+    lineHeight: 24,
+  },
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  ingredientDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
   },
   ingredientItem: {
-    fontSize: 17,
+    fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
-    lineHeight: 25,
-    marginBottom: 6,
+    flexShrink: 1,
   },
+
+  /* Bottom Bar */
   bottomBar: {
     position: 'absolute',
     left: 0,
@@ -432,21 +576,25 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   addButton: {
-    backgroundColor: Colors.medium,
+    backgroundColor: Colors.primary,
     borderRadius: 999,
     paddingVertical: 18,
     alignItems: 'center',
+    ...Shadows.card,
   },
   addButtonDisabled: {
     opacity: 0.7,
   },
   addButtonText: {
-    color: Colors.text,
-    fontSize: 19,
-    fontWeight: '700',
+    color: Colors.white,
+    fontSize: 17,
+    fontFamily: Typography.bold,
   },
+
+  /* Empty */
   emptyText: {
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 12,
   },
@@ -459,7 +607,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   backFallbackText: {
+    fontFamily: Typography.semibold,
     color: Colors.text,
-    fontWeight: '600',
   },
 });

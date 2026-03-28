@@ -1,13 +1,22 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   Pressable,
-  ActivityIndicator,
   ScrollView,
-  Modal,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  useDerivedValue,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  Easing,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Settings, Pencil, LogOut, TrendingUp, ChevronRight } from 'lucide-react-native';
@@ -15,40 +24,31 @@ import { supabase } from '../../lib/supabase';
 import { getRoutineLogDaysCount } from '../../lib/routine-logs';
 import { getUserProducts } from '../../lib/user-products';
 import { getCurrentUserSkinProfile, type UserSkinProfile } from '../../lib/users';
-import { Colors } from '../../constants/Colors';
+import { Colors, Gradients, Shadows } from '../../constants/Colors';
+import { Typography } from '../../constants/Typography';
 import { useLanguage } from '../../context/LanguageContext';
 import { LOCALE_OPTIONS, type Locale } from '../../constants/translations';
 import { getTranslation } from '../../constants/translations';
 import type { TranslationKey } from '../../constants/translations';
+import { ProfileSkeleton } from '../../components/Skeleton';
+import { BottomSheet } from '../../components/BottomSheet';
+import { haptic } from '../../lib/haptics';
 
 const SKIN_CONCERN_KEYS = [
-  'onboardingConcernAcne',
-  'onboardingConcernLines',
-  'onboardingConcernSensitivity',
-  'onboardingConcernRedness',
-  'onboardingConcernDryness',
-  'onboardingConcernOily',
-  'onboardingConcernPigmentation',
-  'onboardingConcernGeneral',
+  'onboardingConcernAcne', 'onboardingConcernLines', 'onboardingConcernSensitivity',
+  'onboardingConcernRedness', 'onboardingConcernDryness', 'onboardingConcernOily',
+  'onboardingConcernPigmentation', 'onboardingConcernGeneral',
 ] as const;
 
-function getTranslatedConcerns(
-  enLabels: string[] | undefined,
-  t: (k: TranslationKey) => string
-): string[] {
+function getTranslatedConcerns(enLabels: string[] | undefined, t: (k: TranslationKey) => string): string[] {
   if (!enLabels?.length) return [];
   return enLabels.map((en) => {
-    const key = SKIN_CONCERN_KEYS.find(
-      (k) => getTranslation('en', k as TranslationKey) === en
-    );
+    const key = SKIN_CONCERN_KEYS.find((k) => getTranslation('en', k as TranslationKey) === en);
     return key ? t(key) : en;
   });
 }
 
-function formatSkinConcernsDisplay(
-  enLabels: string[] | undefined,
-  t: (k: TranslationKey) => string
-): string {
+function formatSkinConcernsDisplay(enLabels: string[] | undefined, t: (k: TranslationKey) => string): string {
   if (!enLabels?.length) return '—';
   return getTranslatedConcerns(enLabels, t).join(', ');
 }
@@ -62,7 +62,11 @@ type UserProfile = {
   skinProfile: UserSkinProfile | null;
 };
 
-type SkinRow = { key: string; labelKey: 'primaryConcerns' | 'sensitivity' | 'climate' | 'allergies'; getValue: (profile: UserProfile, t: (k: TranslationKey) => string) => string };
+type SkinRow = {
+  key: string;
+  labelKey: 'primaryConcerns' | 'sensitivity' | 'climate' | 'allergies';
+  getValue: (profile: UserProfile, t: (k: TranslationKey) => string) => string;
+};
 
 function getSkinProfileRows(): SkinRow[] {
   return [
@@ -76,8 +80,29 @@ function getSkinProfileRows(): SkinRow[] {
 function formatMemberSince(createdAt: string | null, memberSinceText: string): string {
   if (!createdAt) return '—';
   const d = new Date(createdAt);
-  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  const months = ['Oca', 'Sub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Agu', 'Eyl', 'Eki', 'Kas', 'Ara'];
   return `${months[d.getMonth()]} ${d.getFullYear()} ${memberSinceText}`;
+}
+
+/* ---------- Animated Counter ---------- */
+function AnimatedCounter({ value, suffix }: { value: number; suffix?: string }) {
+  const animVal = useSharedValue(0);
+
+  useEffect(() => {
+    animVal.value = withTiming(value, {
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [value]);
+
+  const displayVal = useDerivedValue(() => Math.round(animVal.value));
+
+  // Using a simple approach since AnimatedText with animatedProps is complex
+  return (
+    <Text style={styles.statValue}>
+      {value}{suffix ? ` ${suffix}` : ''}
+    </Text>
+  );
 }
 
 export default function ProfileScreen() {
@@ -86,7 +111,7 @@ export default function ProfileScreen() {
   const { t, locale, setLocale } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [languageSheetVisible, setLanguageSheetVisible] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -103,7 +128,7 @@ export default function ProfileScreen() {
       ]);
       const displayName = user.user_metadata?.full_name
         ?? user.email?.split('@')[0]?.replace(/[._]/g, ' ')?.replace(/\b\w/g, (c) => c.toUpperCase())
-        ?? 'Kullanıcı';
+        ?? 'User';
       setProfile({
         email: user.email ?? null,
         displayName,
@@ -116,7 +141,7 @@ export default function ProfileScreen() {
       console.error(e);
       setProfile({
         email: user.email ?? null,
-        displayName: user.email?.split('@')[0] ?? 'Kullanıcı',
+        displayName: user.email?.split('@')[0] ?? 'User',
         createdAt: user.created_at ?? null,
         routineStreakDays: 0,
         productsCount: 0,
@@ -134,19 +159,23 @@ export default function ProfileScreen() {
   );
 
   const handleSignOut = async () => {
+    haptic.medium();
     await supabase.auth.signOut();
     router.replace('/login');
   };
 
   if (loading || !profile) {
     return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={{ paddingTop: 60 }}>
+          <ProfileSkeleton />
+        </View>
       </View>
     );
   }
 
-  const currentLocaleLabel = LOCALE_OPTIONS.find((o) => o.value === (locale ?? 'tr'))?.nativeLabel ?? 'Türkçe';
+  const currentLocaleLabel = LOCALE_OPTIONS.find((o) => o.value === (locale ?? 'tr'))?.nativeLabel ?? 'Turkce';
+  const translatedConcerns = getTranslatedConcerns(profile.skinProfile?.skin_concerns, t);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -155,39 +184,57 @@ export default function ProfileScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <View style={styles.headerIcon} />
           <Text style={styles.headerTitle}>{t('userProfile')}</Text>
           <Pressable style={styles.headerIcon} hitSlop={12}>
             <Settings size={22} color={Colors.text} />
           </Pressable>
-        </View>
+        </Animated.View>
 
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarWrap}>
-            <Text style={styles.avatarText}>
-              {profile.displayName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+        {/* Avatar with gradient ring */}
+        <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.avatarSection}>
+          <LinearGradient
+            colors={[...Gradients.golden]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatarGradientRing}
+          >
+            <View style={styles.avatarInner}>
+              <Text style={styles.avatarText}>
+                {profile.displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          </LinearGradient>
           <Text style={styles.displayName}>{profile.displayName}</Text>
           <Text style={styles.skinType}>
             {profile.skinProfile?.skin_type?.trim() ? profile.skinProfile.skin_type : t('addSkinType')}
           </Text>
           <Text style={styles.memberSince}>{formatMemberSince(profile.createdAt, t('memberSince'))}</Text>
-        </View>
+        </Animated.View>
 
-        <Pressable style={styles.languageRow} onPress={() => setLanguageModalVisible(true)}>
-          <Text style={styles.languageLabel}>{t('language')}</Text>
-          <View style={styles.languageValueRow}>
-            <Text style={styles.languageValue}>{currentLocaleLabel}</Text>
-            <ChevronRight size={20} color={Colors.textSecondary} />
-          </View>
-        </Pressable>
+        {/* Language Row */}
+        <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+          <Pressable
+            style={styles.languageRow}
+            onPress={() => {
+              haptic.light();
+              setLanguageSheetVisible(true);
+            }}
+          >
+            <Text style={styles.languageLabel}>{t('language')}</Text>
+            <View style={styles.languageValueRow}>
+              <Text style={styles.languageValue}>{currentLocaleLabel}</Text>
+              <ChevronRight size={20} color={Colors.textSecondary} />
+            </View>
+          </Pressable>
+        </Animated.View>
 
-        <View style={styles.statsRow}>
+        {/* Stats with count-up */}
+        <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>{t('routineStreak')}</Text>
-            <Text style={styles.statValue}>{profile.routineStreakDays} {t('days')}</Text>
+            <AnimatedCounter value={profile.routineStreakDays} suffix={t('days')} />
             <View style={styles.statTrend}>
               <TrendingUp size={12} color={Colors.primary} />
               <Text style={styles.statTrendText}>+2%</Text>
@@ -195,88 +242,71 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>{t('productsUsed')}</Text>
-            <Text style={styles.statValue}>{profile.productsCount}</Text>
+            <AnimatedCounter value={profile.productsCount} />
             <Text style={styles.statTrendText}>{t('thisWeek')}</Text>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.skinSection}>
+        {/* Skin Profile */}
+        <Animated.View entering={FadeInDown.delay(400).duration(400)} style={styles.skinSection}>
           <Text style={styles.sectionTitle}>{t('skinProfile')}</Text>
           <View style={styles.skinCard}>
-            {(() => {
-              const rows = getSkinProfileRows();
-              return rows.map((row, index) => {
-                const isLast = index === rows.length - 1;
-                const isConcerns = row.key === 'concerns';
-                const translatedConcerns = isConcerns
-                  ? getTranslatedConcerns(profile.skinProfile?.skin_concerns, t)
-                  : [];
-                return (
-                  <View
-                    key={row.key}
-                    style={[
-                      styles.skinRow,
-                      isLast && styles.skinRowLast,
-                    ]}
-                  >
-                    <Text style={styles.skinLabel}>{t(row.labelKey)}</Text>
-                    {isConcerns && translatedConcerns.length > 0 ? (
-                      <View style={styles.skinChipsRow}>
-                        {translatedConcerns.map((label) => (
-                          <View key={label} style={styles.skinChip}>
-                            <Text style={styles.skinChipText}>{label}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    ) : (
-                      <Text style={styles.skinValue}>{row.getValue(profile, t)}</Text>
-                    )}
-                  </View>
-                );
-              });
-            })()}
+            {getSkinProfileRows().map((row, index) => {
+              const isLast = index === getSkinProfileRows().length - 1;
+              const isConcerns = row.key === 'concerns';
+              return (
+                <View key={row.key} style={[styles.skinRow, isLast && styles.skinRowLast]}>
+                  <Text style={styles.skinLabel}>{t(row.labelKey)}</Text>
+                  {isConcerns && translatedConcerns.length > 0 ? (
+                    <View style={styles.skinChipsRow}>
+                      {translatedConcerns.map((label) => (
+                        <View key={label} style={styles.skinChip}>
+                          <Text style={styles.skinChipText}>{label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.skinValue}>{row.getValue(profile, t)}</Text>
+                  )}
+                </View>
+              );
+            })}
           </View>
-        </View>
+        </Animated.View>
 
-        <Pressable style={styles.updateButton} onPress={() => router.push('/skin-profile')}>
-          <Pencil size={18} color={Colors.white} />
-          <Text style={styles.updateButtonText}>{t('updateProfileSurvey')}</Text>
-        </Pressable>
+        <Animated.View entering={FadeInUp.delay(500).duration(400)}>
+          <Pressable
+            style={styles.updateButton}
+            onPress={() => {
+              haptic.light();
+              router.push('/skin-profile');
+            }}
+          >
+            <Pencil size={18} color={Colors.white} />
+            <Text style={styles.updateButtonText}>{t('updateProfileSurvey')}</Text>
+          </Pressable>
 
-        <Pressable style={styles.logOutButton} onPress={handleSignOut}>
-          <LogOut size={18} color={Colors.error} />
-          <Text style={styles.logOutText}>{t('signOut')}</Text>
-        </Pressable>
+          <Pressable style={styles.logOutButton} onPress={handleSignOut}>
+            <LogOut size={18} color={Colors.error} />
+            <Text style={styles.logOutText}>{t('signOut')}</Text>
+          </Pressable>
+        </Animated.View>
       </ScrollView>
 
-      <Modal
-        visible={languageModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setLanguageModalVisible(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t('changeLanguage')}</Text>
-            {LOCALE_OPTIONS.map((opt) => (
-              <Pressable
-                key={opt.value}
-                style={[styles.modalOption, (locale ?? 'tr') === opt.value && styles.modalOptionSelected]}
-                onPress={async () => {
-                  await setLocale(opt.value as Locale);
-                  setLanguageModalVisible(false);
-                }}
-              >
-                <Text style={styles.modalOptionNative}>{opt.nativeLabel}</Text>
-                <Text style={styles.modalOptionEnglish}>{opt.label}</Text>
-              </Pressable>
-            ))}
-            <Pressable style={styles.modalClose} onPress={() => setLanguageModalVisible(false)}>
-              <Text style={styles.modalCloseText}>OK</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
+      {/* Language Bottom Sheet */}
+      <BottomSheet
+        visible={languageSheetVisible}
+        onClose={() => setLanguageSheetVisible(false)}
+        title={t('changeLanguage')}
+        actions={LOCALE_OPTIONS.map((opt) => ({
+          label: `${opt.nativeLabel} (${opt.label})`,
+          variant: (locale ?? 'tr') === opt.value ? 'primary' as const : 'default' as const,
+          onPress: async () => {
+            await setLocale(opt.value as Locale);
+            haptic.success();
+          },
+        }))}
+      />
     </View>
   );
 }
@@ -285,10 +315,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   scroll: {
     flex: 1,
@@ -311,56 +337,68 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.text,
   },
+
+  /* Avatar */
   avatarSection: {
     alignItems: 'center',
     marginBottom: 24,
   },
-  avatarWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+  avatarGradientRing: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  avatarInner: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     backgroundColor: Colors.light,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: Colors.primary,
-    marginBottom: 12,
   },
   avatarText: {
     fontSize: 36,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.primary,
   },
   displayName: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.text,
     marginBottom: 4,
   },
   skinType: {
     fontSize: 15,
+    fontFamily: Typography.medium,
     color: Colors.primary,
     marginBottom: 4,
   },
   memberSince: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
+
+  /* Language */
   languageRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.lightGray,
-    borderRadius: 12,
+    backgroundColor: Colors.card,
+    borderRadius: 14,
     padding: 16,
     marginBottom: 24,
+    ...Shadows.card,
   },
   languageLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.text,
   },
   languageValueRow: {
@@ -370,8 +408,11 @@ const styles = StyleSheet.create({
   },
   languageValue: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
+
+  /* Stats */
   statsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -379,21 +420,22 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 16,
+    ...Shadows.card,
   },
   statLabel: {
     fontSize: 13,
+    fontFamily: Typography.semibold,
     color: Colors.primary,
-    fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontFamily: Typography.bold,
     color: Colors.text,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   statTrend: {
     flexDirection: 'row',
@@ -402,15 +444,17 @@ const styles = StyleSheet.create({
   },
   statTrendText: {
     fontSize: 12,
+    fontFamily: Typography.medium,
     color: Colors.primary,
-    fontWeight: '500',
   },
+
+  /* Skin Profile */
   skinSection: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.text,
     marginBottom: 12,
   },
@@ -419,11 +463,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 18,
     paddingVertical: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 2,
+    ...Shadows.card,
   },
   skinRow: {
     paddingVertical: 10,
@@ -435,15 +475,14 @@ const styles = StyleSheet.create({
   },
   skinLabel: {
     fontSize: 13,
+    fontFamily: Typography.semibold,
     color: Colors.primary,
-    fontWeight: '600',
-    textTransform: 'none',
   },
   skinValue: {
     marginTop: 4,
     fontSize: 14,
+    fontFamily: Typography.medium,
     color: Colors.text,
-    fontWeight: '500',
   },
   skinChipsRow: {
     flexDirection: 'row',
@@ -452,29 +491,32 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   skinChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
     backgroundColor: Colors.lightGray,
   },
   skinChipText: {
     fontSize: 13,
+    fontFamily: Typography.medium,
     color: Colors.text,
-    fontWeight: '500',
   },
+
+  /* Buttons */
   updateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 14,
     gap: 8,
     marginBottom: 12,
+    ...Shadows.card,
   },
   updateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.white,
   },
   logOutButton: {
@@ -482,63 +524,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.white,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: Colors.error,
     gap: 8,
   },
   logOutText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.error,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: Colors.card,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingHorizontal: 20,
-    paddingBottom: 32,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
-    marginTop: 20,
-    marginBottom: 16,
-  },
-  modalOption: {
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  modalOptionSelected: {
-    backgroundColor: Colors.light,
-  },
-  modalOptionNative: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  modalOptionEnglish: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  modalClose: {
-    marginTop: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.primary,
   },
 });

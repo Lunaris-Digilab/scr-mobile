@@ -27,8 +27,9 @@ function getGoogleSignin() {
  */
 export function isGoogleSignInAvailable(): boolean {
   try {
-    require('@react-native-google-signin/google-signin');
-    return true;
+    // Check if the native module exists without triggering TurboModule registry error
+    const { TurboModuleRegistry } = require('react-native');
+    return TurboModuleRegistry.get('RNGoogleSignin') != null;
   } catch {
     return false;
   }

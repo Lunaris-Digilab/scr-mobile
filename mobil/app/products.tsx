@@ -7,6 +7,8 @@ import {
   ChevronRight,
   Bookmark,
   LayoutGrid,
+  Sun,
+  Moon,
 } from 'lucide-react-native';
 import {
   StyleSheet,
@@ -16,10 +18,18 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
-  Alert,
   Image,
   Platform,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
@@ -30,9 +40,14 @@ import type { Product } from '../types/product';
 import type { RoutineType } from '../types/routine';
 import type { UserProductStatus } from '../types/user-product';
 import { getProductBrandDisplay, type ProductCategory } from '../types/product';
-import { Colors } from '../constants/Colors';
+import { Colors, Shadows } from '../constants/Colors';
+import { Typography } from '../constants/Typography';
 import { useLanguage } from '../context/LanguageContext';
 import type { TranslationKey } from '../constants/translations';
+import { AnimatedCard } from '../components/AnimatedCard';
+import { ProductGridSkeleton } from '../components/Skeleton';
+import { BottomSheet, type BottomSheetAction } from '../components/BottomSheet';
+import { haptic } from '../lib/haptics';
 
 const CATEGORY_KEYS: (ProductCategory | '')[] = [
   '', 'cleanser', 'toner', 'serum', 'moisturizer', 'sunscreen', 'mask', 'eye_cream', 'treatment', 'other',
@@ -54,6 +69,24 @@ export default function ProductsScreen() {
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | ''>('');
   const [addingToRoutine, setAddingToRoutine] = useState<string | null>(null);
   const [addingToShelf, setAddingToShelf] = useState<string | null>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  // Routine bottom sheet
+  const [routineSheetProduct, setRoutineSheetProduct] = useState<Product | null>(null);
+
+  // Animated search
+  const searchBorderColor = useSharedValue(0);
+  const searchElevation = useSharedValue(0);
+
+  const searchBarAnimStyle = useAnimatedStyle(() => ({
+    borderColor: searchBorderColor.value === 1 ? Colors.primary : Colors.border,
+    shadowOpacity: searchElevation.value * 0.08,
+  }));
+
+  useEffect(() => {
+    searchBorderColor.value = withTiming(searchFocused ? 1 : 0, { duration: 200 });
+    searchElevation.value = withTiming(searchFocused ? 1 : 0, { duration: 200 });
+  }, [searchFocused]);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -66,18 +99,16 @@ export default function ProductsScreen() {
       setProducts(list);
     } catch (e) {
       console.error(e);
-      Alert.alert(t('error'), t('productsLoadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter, t]);
+  }, [search, categoryFilter]);
 
   useEffect(() => {
     const delay = setTimeout(loadProducts, 300);
     return () => clearTimeout(delay);
   }, [loadProducts]);
 
-  // Yeni ürün ekleyip geri dönüldüğünde listeyi yenile
   useFocusEffect(
     useCallback(() => {
       loadProducts();
@@ -85,31 +116,15 @@ export default function ProductsScreen() {
   );
 
   const handleAddToRoutine = (product: Product) => {
-    Alert.alert(
-      t('productsAddToRoutineTitle'),
-      `${product.name} ${t('productsWhichRoutine')}`,
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('productsMorningRoutine'),
-          onPress: () => addProductToRoutine(product, 'AM'),
-        },
-        {
-          text: t('productsEveningRoutine'),
-          onPress: () => addProductToRoutine(product, 'PM'),
-        },
-      ]
-    );
+    haptic.light();
+    setRoutineSheetProduct(product);
   };
 
   const addProductToRoutine = async (product: Product, type: RoutineType) => {
     try {
       setAddingToRoutine(product.id);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        Alert.alert(t('error'), t('productsLoginRequired'));
-        return;
-      }
+      if (!user) return;
       const routine = await getOrCreateRoutine(user.id, type, user.email ?? undefined);
       const brandDisplay = getProductBrandDisplay(product);
       const catLabel = product.category ? getCategoryLabel(product.category, t) : '';
@@ -121,10 +136,9 @@ export default function ProductsScreen() {
         order: 0,
         product_id: product.id,
       });
-      Alert.alert(t('productsAdded'), `${product.name} – ${type === 'AM' ? t('productsAddedToMorning') : t('productsAddedToEvening')}`);
+      haptic.success();
     } catch (e) {
       console.error(e);
-      Alert.alert(t('error'), t('productsAddToRoutineFailed'));
     } finally {
       setAddingToRoutine(null);
     }
@@ -133,32 +147,21 @@ export default function ProductsScreen() {
   const handleAddToShelf = async (product: Product, status: UserProductStatus) => {
     try {
       setAddingToShelf(product.id);
+      haptic.light();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        Alert.alert(t('error'), t('productsLoginRequired'));
-        return;
-      }
+      if (!user) return;
       const existing = await getExistingUserProduct(user.id, product.id);
       if (existing) {
         await updateUserProduct(existing.id, { status });
-        Alert.alert(t('productsUpdated'), status === 'opened' ? t('productsMovedToShelf') : t('productsMovedToWishlist'));
       } else {
         await addToShelf(user.id, product.id, status);
-        Alert.alert(t('productsAdded'), status === 'opened' ? t('productsAddedToShelf') : t('productsAddedToWishlist'));
       }
+      haptic.success();
     } catch (e) {
       console.error(e);
-      Alert.alert(t('error'), t('productsAddFailed'));
     } finally {
       setAddingToShelf(null);
     }
-  };
-
-  const handleViewDetails = (product: Product) => {
-    router.push({
-      pathname: '/products/[id]',
-      params: { id: product.id },
-    });
   };
 
   const renderProduct = ({ item, index }: { item: Product; index: number }) => {
@@ -167,84 +170,105 @@ export default function ProductsScreen() {
     const isBusy = isAdding || isAddingShelf;
 
     return (
-      <View style={styles.card}>
-        <View style={styles.cardImageWrap}>
-          {item.image_url ? (
-            <Image
-              source={{ uri: item.image_url }}
-              style={styles.cardImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[styles.cardImagePlaceholder, { backgroundColor: index % 2 === 0 ? Colors.light : Colors.mediumLight }]}>
-              <Text style={styles.cardImagePlaceholderText}>
-                {item.name.charAt(0)}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.cardName} numberOfLines={2}>
-            {item.name}
-          </Text>
-          {!!getProductBrandDisplay(item) && (
-            <Text style={styles.cardBrand} numberOfLines={1}>
-              {getProductBrandDisplay(item)}
-            </Text>
-          )}
-          <View style={styles.cardActions}>
-            <Pressable
-              style={[styles.viewButton, isBusy && styles.addButtonDisabled]}
-              onPress={() => handleViewDetails(item)}
-              disabled={isBusy}
-            >
-              {isBusy ? (
-                <ActivityIndicator size="small" color={Colors.text} />
-              ) : (
-                <>
-                  <Text style={styles.viewButtonText}>View Details</Text>
-                  <ChevronRight size={16} color={Colors.text} />
-                </>
-              )}
-            </Pressable>
-            <Pressable
-              style={styles.bookmarkButton}
-              onPress={() => handleAddToShelf(item, 'wishlist')}
-              disabled={isAdding || isAddingShelf}
-            >
-              <Bookmark size={20} color={Colors.textSecondary} />
-            </Pressable>
+      <Animated.View
+        entering={FadeInDown.delay(index * 40).duration(400)}
+        style={{ width: '48.2%' }}
+      >
+        <AnimatedCard
+          style={styles.card}
+          onPress={() => router.push({ pathname: '/products/[id]', params: { id: item.id } })}
+        >
+          <View style={styles.cardImageWrap}>
+            {item.image_url ? (
+              <Image
+                source={{ uri: item.image_url }}
+                style={styles.cardImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.cardImagePlaceholder,
+                  { backgroundColor: index % 2 === 0 ? Colors.light : Colors.mediumLight },
+                ]}
+              >
+                <Text style={styles.cardImagePlaceholderText}>
+                  {item.name.charAt(0)}
+                </Text>
+              </View>
+            )}
           </View>
-        </View>
-      </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardName} numberOfLines={2}>
+              {item.name}
+            </Text>
+            {!!getProductBrandDisplay(item) && (
+              <Text style={styles.cardBrand} numberOfLines={1}>
+                {getProductBrandDisplay(item)}
+              </Text>
+            )}
+            <View style={styles.cardActions}>
+              <Pressable
+                style={[styles.viewButton, isBusy && styles.addButtonDisabled]}
+                onPress={() => router.push({ pathname: '/products/[id]', params: { id: item.id } })}
+                disabled={isBusy}
+              >
+                {isBusy ? (
+                  <ActivityIndicator size="small" color={Colors.text} />
+                ) : (
+                  <>
+                    <Text style={styles.viewButtonText}>View Details</Text>
+                    <ChevronRight size={16} color={Colors.text} />
+                  </>
+                )}
+              </Pressable>
+              <Pressable
+                style={styles.bookmarkButton}
+                onPress={() => handleAddToShelf(item, 'wishlist')}
+                disabled={isBusy}
+              >
+                <Bookmark size={20} color={Colors.textSecondary} />
+              </Pressable>
+            </View>
+          </View>
+        </AnimatedCard>
+      </Animated.View>
     );
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
         <Text style={styles.headerTitle}>{t('productsTitle')}</Text>
         <Pressable style={styles.headerIcon} hitSlop={12}>
           <LayoutGrid size={22} color={Colors.text} />
         </Pressable>
-      </View>
+      </Animated.View>
 
+      {/* Animated Search Bar */}
       <View style={styles.searchWrap}>
-        <View style={styles.searchBar}>
-          <Search size={18} color={Colors.textSecondary} style={{ marginRight: 10 }} />
+        <Animated.View style={[styles.searchBar, searchBarAnimStyle]}>
+          <Search
+            size={18}
+            color={searchFocused ? Colors.primary : Colors.textSecondary}
+            style={{ marginRight: 10 }}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder={t('productsSearchPlaceholder')}
             placeholderTextColor={Colors.textSecondary}
             value={search}
             onChangeText={setSearch}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
           />
           <Pressable hitSlop={12} style={{ padding: 4 }}>
             <Mic size={18} color={Colors.textSecondary} />
           </Pressable>
-        </View>
+        </Animated.View>
       </View>
 
+      {/* Category Pills */}
       <View style={styles.filters}>
         <FlatList
           horizontal
@@ -256,21 +280,17 @@ export default function ProductsScreen() {
             const isActive = categoryFilter === item.key;
             return (
               <Pressable
-                style={[
-                  styles.filterPill,
-                  isActive && styles.filterPillActive,
-                ]}
-                onPress={() => setCategoryFilter(item.key as ProductCategory | '')}
+                style={[styles.filterPill, isActive && styles.filterPillActive]}
+                onPress={() => {
+                  haptic.selection();
+                  setCategoryFilter(item.key as ProductCategory | '');
+                }}
               >
                 <Text
-                  style={[
-                    styles.filterPillText,
-                    isActive && styles.filterPillTextActive,
-                  ]}
+                  style={[styles.filterPillText, isActive && styles.filterPillTextActive]}
                 >
                   {item.label}
                 </Text>
-                {!isActive && <ChevronDown size={14} color={Colors.textSecondary} style={{ marginLeft: 4 }} />}
               </Pressable>
             );
           }}
@@ -286,8 +306,8 @@ export default function ProductsScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+        <View style={{ paddingTop: 8 }}>
+          <ProductGridSkeleton />
         </View>
       ) : (
         <FlatList
@@ -301,24 +321,65 @@ export default function ProductsScreen() {
             { paddingBottom: insets.bottom + 170 },
           ]}
           columnWrapperStyle={styles.gridRow}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.empty}>
+            <Animated.View entering={FadeInUp.duration(500)} style={styles.empty}>
+              <View style={styles.emptyIconWrap}>
+                <Search size={36} color={Colors.medium} />
+              </View>
               <Text style={styles.emptyText}>{t('productsNoResults')}</Text>
-              <Text style={styles.emptySubtext}>
-                {t('productsNoResultsHint')}
-              </Text>
-            </View>
+              <Text style={styles.emptySubtext}>{t('productsNoResultsHint')}</Text>
+            </Animated.View>
           }
         />
       )}
 
-      <Pressable
+      <Animated.View
+        entering={FadeInUp.delay(300).duration(500)}
         style={[styles.fab, { bottom: fabBottomOffset }]}
-        onPress={() => router.push('/products/add')}
       >
-        <Plus size={20} color={Colors.white} />
-        <Text style={styles.fabText}>{t('productsAddProduct')}</Text>
-      </Pressable>
+        <Pressable
+          style={styles.fabInner}
+          onPress={() => {
+            haptic.medium();
+            router.push('/products/add');
+          }}
+        >
+          <Plus size={20} color={Colors.white} />
+          <Text style={styles.fabText}>{t('productsAddProduct')}</Text>
+        </Pressable>
+      </Animated.View>
+
+      {/* AM/PM Routine Bottom Sheet */}
+      <BottomSheet
+        visible={!!routineSheetProduct}
+        onClose={() => setRoutineSheetProduct(null)}
+        title={t('productsAddToRoutineTitle')}
+        message={routineSheetProduct ? `${routineSheetProduct.name}` : ''}
+        actions={[
+          {
+            label: t('productsMorningRoutine'),
+            icon: <Sun size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => {
+              if (routineSheetProduct) addProductToRoutine(routineSheetProduct, 'AM');
+            },
+          },
+          {
+            label: t('productsEveningRoutine'),
+            icon: <Moon size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => {
+              if (routineSheetProduct) addProductToRoutine(routineSheetProduct, 'PM');
+            },
+          },
+          {
+            label: t('cancel'),
+            variant: 'default',
+            onPress: () => {},
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -338,12 +399,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.text,
   },
   headerIcon: {
     padding: 4,
   },
+
+  /* Search */
   searchWrap: {
     paddingHorizontal: 20,
     paddingBottom: 12,
@@ -352,18 +415,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.card,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
+    shadowColor: '#8f5c74',
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 0,
   },
   searchInput: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 10,
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.text,
   },
+
+  /* Filters */
   filters: {
     marginBottom: 12,
   },
@@ -375,41 +445,40 @@ const styles = StyleSheet.create({
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: Colors.card,
     marginRight: 8,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
   },
   filterPillActive: {
-    backgroundColor: Colors.light,
-    borderColor: Colors.light,
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   filterPillText: {
     fontSize: 14,
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
-    fontWeight: '500',
   },
   filterPillTextActive: {
-    color: Colors.text,
-    fontWeight: '600',
+    color: Colors.white,
+    fontFamily: Typography.semibold,
   },
+
+  /* Results */
   resultsRow: {
     paddingHorizontal: 20,
     marginBottom: 14,
   },
   resultsText: {
     fontSize: 12,
+    fontFamily: Typography.semibold,
     color: Colors.textSecondary,
-    fontWeight: '600',
   },
-  loadingWrap: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
+  /* Grid */
   listContent: {
     paddingHorizontal: 12,
     paddingTop: 4,
@@ -418,31 +487,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+
+  /* Empty */
   empty: {
     paddingVertical: 48,
     alignItems: 'center',
   },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.lightGray,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   emptyText: {
     fontSize: 16,
+    fontFamily: Typography.semibold,
     color: Colors.textSecondary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
+
+  /* Card */
   card: {
-    width: '48.2%',
     backgroundColor: Colors.card,
     borderRadius: 16,
     padding: 10,
     borderWidth: 1,
     borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Shadows.card,
   },
   cardImageWrap: {
     width: '100%',
@@ -459,13 +538,12 @@ const styles = StyleSheet.create({
   cardImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: Colors.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardImagePlaceholderText: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: Typography.bold,
     color: Colors.gray,
   },
   cardBody: {
@@ -473,12 +551,13 @@ const styles = StyleSheet.create({
   },
   cardName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.text,
     marginBottom: 4,
   },
   cardBrand: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 10,
   },
@@ -502,7 +581,7 @@ const styles = StyleSheet.create({
   },
   viewButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.text,
   },
   bookmarkButton: {
@@ -513,9 +592,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light,
     borderRadius: 19,
   },
+
+  /* FAB */
   fab: {
     position: 'absolute',
     right: 20,
+    ...Shadows.fab,
+  },
+  fabInner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primary,
@@ -523,15 +607,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 28,
     gap: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
   fabText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: Typography.semibold,
     color: Colors.white,
   },
 });
