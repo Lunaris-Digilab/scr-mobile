@@ -41,13 +41,12 @@ Panelde self-signup yoktur; admin rolü yalnızca SQL ile verilir.
 ## Çalıştırma
 
 ```bash
-npm run server        # http://localhost:3456
+npm run server                          # http://localhost:3456
+npx tsx src/index.ts server --port 8080 # farklı port
 ```
 
 Tarayıcıda aç, editör e-posta/şifresiyle giriş yap. **Ürünler** sekmesinden ürün ekle/düzenle/sil.
 Sol menüde ayrıca **Markalar** ve **İçerikler** (göz atma) ile **Scraper** (ikincil) bulunur.
-
-> Not: `--port` bayrağında Commander/parseInt kaynaklı bir sorun var; varsayılan 3456 portunu kullan.
 
 ## Mimari
 

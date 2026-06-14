@@ -36,7 +36,7 @@ program
 program
   .command('server')
   .description('Start the GUI dashboard')
-  .option('-p, --port <port>', 'Port number', parseInt, 3456)
+  .option('-p, --port <port>', 'Port number', (v) => parseInt(v, 10), 3456)
   .action((opts) => {
     startServer(opts.port);
   });
