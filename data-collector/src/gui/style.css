@@ -244,6 +244,13 @@ body {
 .checkbox-grid { display: flex; flex-wrap: wrap; gap: 10px 16px; }
 .check { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
 
+/* ── Modal ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(61,53,48,0.42); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+.modal-overlay.show { display: flex; }
+.modal { width: 100%; max-width: 380px; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
 .brand-row { display: flex; align-items: center; gap: 8px; }
 .brand-row .form-select { flex: 1; }
 .brand-row .btn { white-space: nowrap; }

@@ -117,6 +117,44 @@ function toast(message, type = 'success') {
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 
+// ── Prompt modal (returns trimmed string or null) ──
+function promptModal({ title = '', placeholder = '', value = '', okText = 'Ekle' } = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('modalOverlay');
+    const input = document.getElementById('modalInput');
+    const okBtn = document.getElementById('modalOk');
+    const cancelBtn = document.getElementById('modalCancel');
+
+    document.getElementById('modalTitle').textContent = title;
+    input.placeholder = placeholder;
+    input.value = value;
+    okBtn.textContent = okText;
+    overlay.classList.add('show');
+    setTimeout(() => input.focus(), 30);
+
+    function cleanup(result) {
+      overlay.classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKey);
+      overlay.removeEventListener('mousedown', onBackdrop);
+      resolve(result);
+    }
+    const onOk = () => cleanup(input.value.trim() || null);
+    const onCancel = () => cleanup(null);
+    const onKey = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); onOk(); }
+      else if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+    };
+    const onBackdrop = (e) => { if (e.target === overlay) onCancel(); };
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKey);
+    overlay.addEventListener('mousedown', onBackdrop);
+  });
+}
+
 // ── HTML escape ──
 function esc(str) {
   if (str == null) return '';

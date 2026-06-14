@@ -355,7 +355,7 @@ async function createBrand(name) {
 }
 
 async function addNewBrand() {
-  const name = (prompt('Yeni marka adı:') || '').trim();
+  const name = await promptModal({ title: 'Yeni marka', placeholder: 'Marka adı' });
   if (!name) return;
   try {
     const c = await createBrand(name);
@@ -385,7 +385,7 @@ window.BrandsView = {
     const input = document.getElementById('brandSearch');
     input.addEventListener('input', debounce(() => loadLookup('/api/companies', 'brandsBody', input.value), 250));
     document.getElementById('addBrandBtn').addEventListener('click', async () => {
-      const name = (prompt('Yeni marka adı:') || '').trim();
+      const name = await promptModal({ title: 'Yeni marka', placeholder: 'Marka adı' });
       if (!name) return;
       try {
         await createBrand(name);
