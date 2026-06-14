@@ -4,12 +4,15 @@ import { getServiceClient } from '../supabase.js';
 // Lookup data for the product form: brands, categories, ingredients, skin types/concerns.
 export const taxonomyRouter = Router();
 
-// GET /api/companies?search= — brand autocomplete
+// GET /api/companies?search=  — autocomplete (limit 20)
+// GET /api/companies?all=1    — full list for the brand select box
 taxonomyRouter.get('/companies', async (req, res) => {
   try {
     const term = str(req.query.search);
-    let query = getServiceClient().from('companies').select('id, name').order('name').limit(20);
+    const all = req.query.all === '1' || req.query.all === 'true';
+    let query = getServiceClient().from('companies').select('id, name').order('name');
     if (term) query = query.ilike('name', `%${escapeLike(term)}%`);
+    if (!all) query = query.limit(20);
     const { data, error } = await query;
     if (error) throw error;
     res.json(data ?? []);

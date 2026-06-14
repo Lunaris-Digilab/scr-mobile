@@ -7,7 +7,9 @@ import { logger } from '../utils/logger.js';
 export interface ProductInput {
   name: string;
   brand?: string | null;
-  /** Marka adı; eşleşen company yoksa oluşturulur (company_id). */
+  /** Seçilen kayıtlı markanın id'si (select box). */
+  company_id?: string | null;
+  /** Marka adı; eşleşen company yoksa oluşturulur (legacy/scraper yolu). */
   company_name?: string | null;
   category_id?: string | null;
   description?: string | null;
@@ -151,10 +153,14 @@ async function buildProductRow(
   db: SupabaseClient,
   input: ProductInput,
 ): Promise<Record<string, unknown>> {
-  const brand = clean(input.brand) ?? clean(input.company_name);
-  let companyId: string | null = null;
-  const companyName = clean(input.company_name) ?? clean(input.brand);
-  if (companyName) companyId = await getOrCreateCompany(db, companyName);
+  // Prefer an explicitly chosen company (select box). Fall back to get-or-create
+  // by name (legacy free-text / scraper path).
+  let companyId: string | null = clean(input.company_id);
+  let brand = clean(input.brand);
+  if (!companyId) {
+    const companyName = clean(input.company_name) ?? brand;
+    if (companyName) companyId = await getOrCreateCompany(db, companyName);
+  }
 
   return {
     name: input.name.trim(),

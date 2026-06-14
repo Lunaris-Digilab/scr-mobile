@@ -12,11 +12,12 @@ const TARGET_AREAS = ['face', 'eye', 'lip', 'body', 'hand', 'hair', 'nail', 'sca
 
 const FLAG_FIELDS = ['is_cruelty_free', 'is_vegan', 'is_fragrance_free', 'is_paraben_free', 'is_alcohol_free', 'is_private'];
 const NUMBER_FIELDS = ['size_value', 'spf', 'ph_level', 'shelf_life_months'];
-const TEXT_FIELDS = ['name', 'brand', 'barcode', 'image_url', 'description', 'ingredients_text', 'usage_instructions', 'country_of_origin'];
-const ENUM_FIELDS = ['size_unit', 'texture', 'usage_frequency', 'usage_time', 'target_area', 'category_id'];
+const TEXT_FIELDS = ['name', 'barcode', 'image_url', 'description', 'ingredients_text', 'usage_instructions', 'country_of_origin'];
+const ENUM_FIELDS = ['size_unit', 'texture', 'usage_frequency', 'usage_time', 'target_area', 'category_id', 'company_id'];
 
 let pState = { page: 0, total: 0, search: '', categoryId: '' };
 let categoriesCache = [];
+let companiesCache = [];
 let skinTypesCache = [];
 let concernsCache = [];
 let ingredientTags = [];
@@ -43,12 +44,14 @@ async function initProducts() {
 
 // ── Taxonomy ──
 async function loadTaxonomy() {
-  const [cats, skins, concerns] = await Promise.all([
+  const [cats, companies, skins, concerns] = await Promise.all([
     apiJson('/api/categories'),
+    apiJson('/api/companies?all=1'),
     apiJson('/api/skin-types'),
     apiJson('/api/skin-concerns'),
   ]);
   categoriesCache = cats || [];
+  companiesCache = companies || [];
   skinTypesCache = skins || [];
   concernsCache = concerns || [];
 }
@@ -61,6 +64,9 @@ function buildFormControls() {
     filter.appendChild(opt(c.id, c.name));
     formSelect.appendChild(opt(c.id, c.name));
   }
+  // Brand select (registered companies only)
+  const brandSelect = pField('company_id');
+  for (const c of companiesCache) brandSelect.appendChild(opt(c.id, c.name));
   // Enum selects (with empty default)
   fillEnumSelect('size_unit', SIZE_UNITS);
   fillEnumSelect('texture', TEXTURES);
@@ -102,12 +108,6 @@ function wireControls() {
     handleImageFile(e.target.files[0]),
   );
   pField('image_url').addEventListener('input', (e) => showPreview(e.target.value));
-
-  // Brand autocomplete
-  pField('brand').addEventListener(
-    'input',
-    debounce((e) => fillDatalist('brandList', '/api/companies', e.target.value), 250),
-  );
 
   // Ingredient tags
   const ingInput = document.getElementById('ingredientInput');
@@ -220,8 +220,6 @@ function resetForm() {
 function fillForm(p) {
   pField('id').value = p.id || '';
   for (const f of TEXT_FIELDS) setVal(f, p[f]);
-  // brand falls back to linked company name
-  if (!p.brand && p.companies?.name) setVal('brand', p.companies.name);
   for (const f of NUMBER_FIELDS) setVal(f, p[f]);
   for (const f of ENUM_FIELDS.filter((x) => x !== 'category_id')) setVal(f, p[f]);
   setVal('category_id', p.category_id || '');
@@ -241,10 +239,7 @@ async function saveProduct() {
   if (!name) { toast('Ürün adı gerekli', 'error'); return; }
 
   const input = { name };
-  const brand = pField('brand').value.trim();
-  input.brand = brand || null;
-  input.company_name = brand || null; // get-or-create company from same name
-  for (const f of TEXT_FIELDS.filter((x) => x !== 'name' && x !== 'brand')) {
+  for (const f of TEXT_FIELDS.filter((x) => x !== 'name')) {
     input[f] = pField(f).value.trim() || null;
   }
   for (const f of NUMBER_FIELDS) {
@@ -252,6 +247,9 @@ async function saveProduct() {
     input[f] = v === '' ? null : Number(v);
   }
   for (const f of ENUM_FIELDS) input[f] = pField(f).value || null;
+  // Brand text mirrors the chosen registered company (select box).
+  const brandSel = pField('company_id');
+  input.brand = brandSel.value ? brandSel.options[brandSel.selectedIndex].text : null;
   for (const f of FLAG_FIELDS) input[f] = pField(f).checked;
   input.ingredients = ingredientTags.slice();
   input.skin_type_ids = checkedValues('#skinTypesBox');
