@@ -94,7 +94,7 @@
               <div class="form-section-title">Temel bilgiler</div>
               <div class="form-row">
                 <div class="form-group"><label class="form-label">Ürün adı *</label><input class="form-input" name="name" /></div>
-                <div class="form-group"><label class="form-label">Marka</label><select class="form-input form-select" name="company_id"><option value="">— Marka seç —</option></select></div>
+                <div class="form-group"><label class="form-label">Marka</label><div class="brand-row"><select class="form-input form-select" name="company_id"><option value="">— Marka seç —</option></select><button type="button" class="btn btn-secondary btn-sm" id="newBrandBtn">+ Yeni</button></div></div>
               </div>
               <div class="form-row">
                 <div class="form-group"><label class="form-label">Kategori</label><select class="form-input form-select" name="category_id"><option value="">—</option></select></div>
@@ -178,9 +178,9 @@
 
       <!-- ───── BRANDS ───── -->
       <section id="view-brands" class="view">
-        <div class="view-header"><h2>Markalar</h2></div>
+        <div class="view-header"><h2>Markalar</h2><button class="btn btn-primary" id="addBrandBtn">+ Marka Ekle</button></div>
         <div class="toolbar"><input id="brandSearch" class="form-input" placeholder="&#128269; Marka ara…" /></div>
-        <p class="hint">Yeni markalar ürün formundaki "Marka" alanına yazıldığında otomatik oluşturulur. Burada mevcutları görebilirsin.</p>
+        <p class="hint">Buradan veya ürün formundaki "Marka → + Yeni" ile marka ekleyebilirsin.</p>
         <div class="card" style="padding:0; overflow:hidden;">
           <table class="data-table"><tbody id="brandsBody"></tbody></table>
         </div>

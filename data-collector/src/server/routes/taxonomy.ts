@@ -1,8 +1,23 @@
 import { Router } from 'express';
 import { getServiceClient } from '../supabase.js';
+import { getOrCreateCompany } from '../products-service.js';
 
 // Lookup data for the product form: brands, categories, ingredients, skin types/concerns.
 export const taxonomyRouter = Router();
+
+// POST /api/companies — create a brand (get-or-create), returns { id, name }
+taxonomyRouter.post('/companies', async (req, res) => {
+  const name = str(req.body?.name);
+  if (!name) return res.status(400).json({ error: 'Marka adı gerekli' });
+  try {
+    const db = getServiceClient();
+    const id = await getOrCreateCompany(db, name);
+    const { data } = await db.from('companies').select('name').eq('id', id).maybeSingle();
+    res.status(201).json({ id, name: (data as { name?: string } | null)?.name ?? name });
+  } catch (err) {
+    res.status(500).json({ error: msg(err) });
+  }
+});
 
 // GET /api/companies?search=  — autocomplete (limit 20)
 // GET /api/companies?all=1    — full list for the brand select box

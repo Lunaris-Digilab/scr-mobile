@@ -244,6 +244,10 @@ body {
 .checkbox-grid { display: flex; flex-wrap: wrap; gap: 10px 16px; }
 .check { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
 
+.brand-row { display: flex; align-items: center; gap: 8px; }
+.brand-row .form-select { flex: 1; }
+.brand-row .btn { white-space: nowrap; }
+
 .image-row { display: flex; align-items: center; gap: 10px; }
 .image-row .form-input { flex: 1; }
 .image-preview { width: 54px; height: 54px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); display: none; }

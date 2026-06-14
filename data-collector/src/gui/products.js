@@ -109,6 +109,9 @@ function wireControls() {
   );
   pField('image_url').addEventListener('input', (e) => showPreview(e.target.value));
 
+  // New brand
+  document.getElementById('newBrandBtn').addEventListener('click', addNewBrand);
+
   // Ingredient tags
   const ingInput = document.getElementById('ingredientInput');
   ingInput.addEventListener('keydown', (e) => {
@@ -337,6 +340,32 @@ function readAsDataURL(file) {
   });
 }
 
+// ── Brands ──
+async function createBrand(name) {
+  const c = await apiJson('/api/companies', jsonBody('POST', { name }));
+  if (!companiesCache.some((x) => x.id === c.id)) {
+    companiesCache.push(c);
+    companiesCache.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+    if (wired) {
+      const sel = pField('company_id');
+      if (sel) sel.appendChild(opt(c.id, c.name));
+    }
+  }
+  return c;
+}
+
+async function addNewBrand() {
+  const name = (prompt('Yeni marka adı:') || '').trim();
+  if (!name) return;
+  try {
+    const c = await createBrand(name);
+    pField('company_id').value = c.id;
+    toast('Marka eklendi');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 // ── Datalist autocomplete ──
 async function fillDatalist(listId, endpoint, term) {
   if (!term || term.length < 2) return;
@@ -355,6 +384,17 @@ window.BrandsView = {
   init() {
     const input = document.getElementById('brandSearch');
     input.addEventListener('input', debounce(() => loadLookup('/api/companies', 'brandsBody', input.value), 250));
+    document.getElementById('addBrandBtn').addEventListener('click', async () => {
+      const name = (prompt('Yeni marka adı:') || '').trim();
+      if (!name) return;
+      try {
+        await createBrand(name);
+        toast('Marka eklendi');
+        loadLookup('/api/companies', 'brandsBody', input.value);
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    });
     loadLookup('/api/companies', 'brandsBody', '');
   },
 };
