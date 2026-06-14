@@ -1,0 +1,30 @@
+{
+  "id": "muller",
+  "name": "Müller",
+  "baseUrl": "https://www.mueller.de",
+  "strategy": "playwright",
+  "listing": {
+    "urlTemplate": "https://www.mueller.de/c/drogerie/pflege/gesichtspflege/?page={{page}}",
+    "productLinkSelector": "#main > div.decorated-plp_layout_decorated-plp__wrapper__mPPoR > div > div:nth-child(2) > div:nth-child(1) > div > div > div > div:nth-child(1) > article > a",
+    "maxPages": 5,
+    "maxProducts": 50
+  },
+  "selectors": {
+    "name": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(1) > article > div.product-info_component_product-info__details-wrapper__VDGpf > h1",
+    "brand": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(2) > div > div > section:nth-child(3) > div > div > table > tbody > tr:nth-child(10) > td:nth-child(2)",
+    "description": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(2) > div > div > section:nth-child(2) > div > div > div:nth-child(1)",
+    "image": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(1) > article > div.product-info_component_product-info__image-wrapper__1fXIf > div.product-media_component_product-media__Nm09M > div > div > span > img",
+    "ingredients": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(2) > div > div > section:nth-child(3) > div > div > table > tbody > tr:nth-child(5) > td:nth-child(2)",
+    "size": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(2) > div > div > section:nth-child(3) > div > div > table > tbody > tr:nth-child(1) > td:nth-child(2)",
+    "howToUse": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(2) > div > div > section:nth-child(3) > div > div > table > tbody > tr:nth-child(7) > td:nth-child(2)",
+    "claims": "",
+    "spf": "",
+    "shelfLife": "",
+    "category": "#main > div.one-column_layout_one-column__content__Sf11_ > div > div:nth-child(2) > div > div > section:nth-child(3) > div > div > table > tbody > tr:nth-child(2) > td:nth-child(2)"
+  },
+  "preActions": [],
+  "rateLimit": {
+    "concurrency": 1,
+    "delayMs": 2000
+  }
+}
