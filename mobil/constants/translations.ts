@@ -53,15 +53,36 @@ const translations: TranslationMap = {
 
   // Profile
   userProfile: { en: 'User Profile', de: 'Benutzerprofil', es: 'Perfil de usuario', tr: 'Kullanıcı Profili' },
+  profileAdminBadge: { en: 'Admin', de: 'Administrator', es: 'Administrador', tr: 'Yönetici' },
   language: { en: 'Language', de: 'Sprache', es: 'Idioma', tr: 'Dil' },
   changeLanguage: { en: 'Change app language', de: 'App-Sprache ändern', es: 'Cambiar idioma de la app', tr: 'Uygulama dilini değiştir' },
   routineStreak: { en: 'Routine streak', de: 'Routine-Serie', es: 'Racha de rutina', tr: 'Rutin Serisi' },
   days: { en: 'Days', de: 'Tage', es: 'Días', tr: 'Gün' },
   productsUsed: { en: 'Products used', de: 'Verwendete Produkte', es: 'Productos usados', tr: 'Kullanılan Ürün' },
   thisWeek: { en: '+ this week', de: '+ diese Woche', es: '+ esta semana', tr: '+ bu hafta' },
+  currentStreak: { en: 'Current streak', de: 'Aktuelle Serie', es: 'Racha actual', tr: 'Güncel Seri' },
+  longestStreak: { en: 'Longest', de: 'Längste', es: 'Más larga', tr: 'En Uzun' },
+  totalActiveDays: { en: 'Active days', de: 'Aktive Tage', es: 'Días activos', tr: 'Aktif Gün' },
+  skinType: { en: 'Skin type', de: 'Hauttyp', es: 'Tipo de piel', tr: 'Cilt Tipi' },
   skinProfile: { en: 'My skin profile', de: 'Mein Hautprofil', es: 'Mi perfil de piel', tr: 'Cilt Profilim' },
+  // Progress dashboard
+  progressTitle: { en: 'Progress', de: 'Fortschritt', es: 'Progreso', tr: 'İlerleme' },
+  progressActivity: { en: 'Activity', de: 'Aktivität', es: 'Actividad', tr: 'Aktivite' },
+  progressLast12Weeks: { en: 'Last 12 weeks', de: 'Letzte 12 Wochen', es: 'Últimas 12 semanas', tr: 'Son 12 hafta' },
+  progressThisMonth: { en: 'This month', de: 'Diesen Monat', es: 'Este mes', tr: 'Bu ay' },
+  progressConsistency: { en: 'Consistency', de: 'Beständigkeit', es: 'Constancia', tr: 'Tutarlılık' },
+  progressDaysActive: { en: 'days active', de: 'Tage aktiv', es: 'días activos', tr: 'gün aktif' },
+  progressLess: { en: 'Less', de: 'Weniger', es: 'Menos', tr: 'Az' },
+  progressMore: { en: 'More', de: 'Mehr', es: 'Más', tr: 'Çok' },
+  progressEmpty: { en: 'No activity yet. Complete a routine to start your streak.', de: 'Noch keine Aktivität. Schließe eine Routine ab, um deine Serie zu starten.', es: 'Sin actividad aún. Completa una rutina para iniciar tu racha.', tr: 'Henüz aktivite yok. Serini başlatmak için bir rutini tamamla.' },
   addSkinType: { en: 'Add skin type', de: 'Hauttyp hinzufügen', es: 'Añadir tipo de piel', tr: 'Cilt tipi ekleyin' },
-  memberSince: { en: 'Member since', de: 'Mitglied seit', es: 'Miembro desde', tr: 'tarihinden beri üye' },
+  selectSkinType: { en: 'Select Skin Type', de: 'Hauttyp auswählen', es: 'Seleccionar tipo de piel', tr: 'Cilt Tipini Seçin' },
+  skinTypeNormal: { en: 'Normal', de: 'Normal', es: 'Normal', tr: 'Normal' },
+  skinTypeDry: { en: 'Dry', de: 'Trocken', es: 'Seca', tr: 'Kuru' },
+  skinTypeOily: { en: 'Oily', de: 'Fettig', es: 'Grasa', tr: 'Yağlı' },
+  skinTypeCombination: { en: 'Combination', de: 'Mischhaut', es: 'Mixta', tr: 'Karma' },
+  skinTypeSensitive: { en: 'Sensitive', de: 'Empfindlich', es: 'Sensible', tr: 'Hassas' },
+  memberSince: { en: 'Member since {date}', de: 'Mitglied seit {date}', es: 'Miembro desde {date}', tr: '{date} tarihinden beri üye' },
   updateProfileSurvey: { en: 'Update profile survey', de: 'Profilumfrage aktualisieren', es: 'Actualizar encuesta de perfil', tr: 'Profil Anketini Güncelle' },
   signOut: { en: 'Sign out', de: 'Abmelden', es: 'Cerrar sesión', tr: 'Çıkış Yap' },
   primaryConcerns: { en: 'Primary concerns', de: 'Hauptanliegen', es: 'Preocupaciones principales', tr: 'Birincil Endişeler' },
@@ -79,6 +100,7 @@ const translations: TranslationMap = {
   today: { en: 'Today', de: 'Heute', es: 'Hoy', tr: 'Bugün' },
   progress: { en: 'PROGRESS', de: 'FORTSCHRITT', es: 'PROGRESO', tr: 'İLERLEME' },
   stepsCompleted: { en: 'steps completed', de: 'Schritte abgeschlossen', es: 'pasos completados', tr: 'adım tamamlandı' },
+  routineComplete: { en: 'Complete!', de: 'Geschafft!', es: '¡Completo!', tr: 'Tamamlandı!' },
   routineEmpty: { en: "You haven't added any products yet. Add with +.", de: 'Noch keine Produkte hinzugefügt. Mit + hinzufügen.', es: 'Aún no has añadido productos. Añade con +.', tr: 'Henüz ürün eklemediniz. + ile ekleyin.' },
   deleteStepTitle: { en: 'Delete step', de: 'Schritt löschen', es: 'Eliminar paso', tr: 'Adımı sil' },
   deleteStepMessage: { en: 'Remove this product from the routine?', de: 'Dieses Produkt aus der Routine entfernen?', es: '¿Quitar este producto de la rutina?', tr: 'Bu ürünü rutinden kaldırmak istiyor musunuz?' },
@@ -137,6 +159,7 @@ const translations: TranslationMap = {
   productsNoResults: { en: 'No products found.', de: 'Keine Produkte gefunden.', es: 'No se encontraron productos.', tr: 'Ürün bulunamadı.' },
   productsNoResultsHint: { en: 'Change search criteria or add your own product.', de: 'Suchkriterien ändern oder eigenes Produkt hinzufügen.', es: 'Cambie los criterios de búsqueda o añada su propio producto.', tr: 'Arama kriterlerini değiştirin veya kendi ürününüzü ekleyin.' },
   productsAddProduct: { en: 'Add Product', de: 'Produkt hinzufügen', es: 'Añadir producto', tr: 'Ürün Ekle' },
+  viewDetails: { en: 'View Details', de: 'Details ansehen', es: 'Ver detalles', tr: 'Detayları gör' },
   productsAddBack: { en: 'Back', de: 'Zurück', es: 'Atrás', tr: 'Geri' },
   // Add to routine alert
   productsAddToRoutineTitle: { en: 'Add to routine', de: 'Zur Routine hinzufügen', es: 'Añadir a rutina', tr: 'Rutine Ekle' },
@@ -162,6 +185,10 @@ const translations: TranslationMap = {
   productReviewsLabel: { en: 'reviews', de: 'Bewertungen', es: 'reseñas', tr: 'yorum' },
   productReviewsPlaceholder: { en: 'Reviews are coming soon for this product.', de: 'Bewertungen fuer dieses Produkt folgen bald.', es: 'Las resenas de este producto llegaran pronto.', tr: 'Bu urun icin yorumlar yakinda gelecek.' },
   productIngredientsPlaceholder: { en: 'No ingredient details yet.', de: 'Noch keine Inhaltsstoffe vorhanden.', es: 'Aun no hay detalles de ingredientes.', tr: 'Henuz icerik bilgisi yok.' },
+  productDescription: { en: 'Description', de: 'Beschreibung', es: 'Descripcion', tr: 'Aciklama' },
+  productShelfLife: { en: 'Shelf Life', de: 'Haltbarkeit', es: 'Vida util', tr: 'Raf Omru' },
+  productMonths: { en: 'months', de: 'Monate', es: 'meses', tr: 'ay' },
+  productNoDetails: { en: 'No details available yet.', de: 'Noch keine Details verfuegbar.', es: 'Aun no hay detalles disponibles.', tr: 'Henuz detay bilgisi yok.' },
   productAddToRoutine: { en: 'Add to Routine', de: 'Zur Routine hinzufuegen', es: 'Anadir a rutina', tr: 'Rutine Ekle' },
   productNotFound: { en: 'Product could not be found.', de: 'Produkt konnte nicht gefunden werden.', es: 'No se pudo encontrar el producto.', tr: 'Urun bulunamadi.' },
   productLoadFailed: { en: 'Could not load product details.', de: 'Produktdetails konnten nicht geladen werden.', es: 'No se pudieron cargar los detalles del producto.', tr: 'Urun detaylari yuklenemedi.' },
@@ -215,6 +242,30 @@ const translations: TranslationMap = {
   addProductIngredients: { en: 'Ingredients / Notes', de: 'Inhaltsstoffe / Notizen', es: 'Ingredientes / Notas', tr: 'İçerik / Notlar' },
   addProductIngredientsPlaceholder: { en: 'Ingredient list or notes', de: 'Inhaltsstoffliste oder Notizen', es: 'Lista de ingredientes o notas', tr: 'İçerik listesi veya notlar' },
   addProductImageUrl: { en: 'Image URL', de: 'Bild-URL', es: 'URL de imagen', tr: 'Görsel URL' },
+  // Photo capture / Magic Add
+  addProductPhoto: { en: 'Product photo', de: 'Produktfoto', es: 'Foto del producto', tr: 'Ürün fotoğrafı' },
+  addProductAddPhoto: { en: 'Add photo', de: 'Foto hinzufügen', es: 'Añadir foto', tr: 'Fotoğraf ekle' },
+  addProductChangePhoto: { en: 'Change', de: 'Ändern', es: 'Cambiar', tr: 'Değiştir' },
+  photoTakePhoto: { en: 'Take photo', de: 'Foto aufnehmen', es: 'Tomar foto', tr: 'Fotoğraf çek' },
+  photoChooseLibrary: { en: 'Choose from library', de: 'Aus Galerie wählen', es: 'Elegir de la galería', tr: 'Galeriden seç' },
+  photoPermissionDenied: { en: 'Camera/photo permission is needed. Enable it in Settings.', de: 'Kamera-/Fotoberechtigung erforderlich. In den Einstellungen aktivieren.', es: 'Se necesita permiso de cámara/fotos. Actívalo en Ajustes.', tr: 'Kamera/galeri izni gerekli. Ayarlardan etkinleştirin.' },
+  photoPickFailed: { en: "Couldn't load the photo. Please try again.", de: 'Foto konnte nicht geladen werden. Bitte erneut versuchen.', es: 'No se pudo cargar la foto. Inténtalo de nuevo.', tr: 'Fotoğraf yüklenemedi. Lütfen tekrar deneyin.' },
+  photoUploading: { en: 'Uploading photo…', de: 'Foto wird hochgeladen…', es: 'Subiendo foto…', tr: 'Fotoğraf yükleniyor…' },
+  // Scan / Magic Add flow
+  addProductScanProduct: { en: 'Scan a product', de: 'Produkt scannen', es: 'Escanear producto', tr: 'Ürün tara' },
+  addProductAddManually: { en: 'Add manually', de: 'Manuell hinzufügen', es: 'Añadir manualmente', tr: 'Elle ekle' },
+  scanTitle: { en: 'Scan product', de: 'Produkt scannen', es: 'Escanear producto', tr: 'Ürün Tara' },
+  scanModeHint: { en: 'Point at the barcode, or tap to read the label', de: 'Auf den Barcode richten oder tippen, um das Etikett zu lesen', es: 'Apunta al código de barras o toca para leer la etiqueta', tr: 'Barkoda doğrult veya etiketi okumak için dokun' },
+  scanReadLabel: { en: 'Read label', de: 'Etikett lesen', es: 'Leer etiqueta', tr: 'Etiketi oku' },
+  scanBarcodeNotFound: { en: 'Not found by barcode. Tap "Read label" to scan the text.', de: 'Per Barcode nicht gefunden. Tippe auf „Etikett lesen".', es: 'No encontrado por código. Toca "Leer etiqueta".', tr: 'Barkodla bulunamadı. "Etiketi oku"ya dokun.' },
+  scanAnalyzing: { en: 'Reading label…', de: 'Etikett wird gelesen…', es: 'Leyendo etiqueta…', tr: 'Etiket okunuyor…' },
+  scanCouldntExtract: { en: "Couldn't auto-fill. You can enter the details manually.", de: 'Automatisches Ausfüllen fehlgeschlagen. Bitte manuell eingeben.', es: 'No se pudo autocompletar. Ingresa los datos manualmente.', tr: 'Otomatik dolduramadık. Bilgileri elle girebilirsin.' },
+  scanPermissionTitle: { en: 'Camera access needed', de: 'Kamerazugriff erforderlich', es: 'Se necesita acceso a la cámara', tr: 'Kamera erişimi gerekli' },
+  scanPermissionBody: { en: 'Enable camera access to scan products.', de: 'Kamerazugriff aktivieren, um Produkte zu scannen.', es: 'Activa la cámara para escanear productos.', tr: 'Ürün taramak için kamera erişimini aç.' },
+  scanGrantPermission: { en: 'Allow camera', de: 'Kamera erlauben', es: 'Permitir cámara', tr: 'Kameraya izin ver' },
+  scanEnterManually: { en: 'Enter manually', de: 'Manuell eingeben', es: 'Ingresar manualmente', tr: 'Elle gir' },
+  prefillBannerBarcode: { en: 'Filled from barcode — please review', de: 'Aus Barcode ausgefüllt — bitte prüfen', es: 'Rellenado del código — revísalo', tr: 'Barkoddan dolduruldu — lütfen kontrol et' },
+  prefillBannerAi: { en: 'Filled from the label — please review', de: 'Vom Etikett ausgefüllt — bitte prüfen', es: 'Rellenado de la etiqueta — revísalo', tr: 'Etiketten dolduruldu — lütfen kontrol et' },
   addProductModalTitle: { en: 'Select category', de: 'Kategorie wählen', es: 'Seleccionar categoría', tr: 'Kategori Seçin' },
   addProductModalClose: { en: 'Close', de: 'Schließen', es: 'Cerrar', tr: 'Kapat' },
   addProductErrorName: { en: 'Enter product name.', de: 'Produktname eingeben.', es: 'Introduzca el nombre del producto.', tr: 'Ürün adı girin.' },
@@ -223,6 +274,8 @@ const translations: TranslationMap = {
   addProductSavedOnly: { en: 'Product added.', de: 'Produkt hinzugefügt.', es: 'Producto añadido.', tr: 'Ürün eklendi.' },
   addProductOk: { en: 'OK', de: 'OK', es: 'OK', tr: 'Tamam' },
   addProductSaveFailed: { en: 'Could not add product.', de: 'Produkt konnte nicht hinzugefügt werden.', es: 'No se pudo añadir el producto.', tr: 'Ürün eklenemedi.' },
+  addProductExisting: { en: 'Similar products found', de: 'Ähnliche Produkte gefunden', es: 'Productos similares encontrados', tr: 'Benzer ürünler bulundu' },
+  addProductCreateNew: { en: 'Create new product', de: 'Neues Produkt erstellen', es: 'Crear nuevo producto', tr: 'Yeni ürün oluştur' },
   addProductBrandSelect: { en: 'Select Brand', de: 'Marke wählen', es: 'Seleccionar marca', tr: 'Marka Seçin' },
   addProductBrandAddNew: { en: 'add as new brand', de: 'als neue Marke', es: 'añadir como nueva marca', tr: 'yeni marka olarak ekle' },
   addProductDescription: { en: 'Description', de: 'Beschreibung', es: 'Descripción', tr: 'Açıklama' },
@@ -270,9 +323,28 @@ const translations: TranslationMap = {
   onboardingAnd: { en: ' and ', de: ' und ', es: ' y ', tr: ' ve ' },
   onboardingPrivacyLink: { en: 'Privacy Policy', de: 'Datenschutz', es: 'Política de privacidad', tr: 'Gizlilik Politikası' },
   onboardingTermsSuffix: { en: '.', de: ' zu.', es: '.', tr: '\'nı kabul etmiş olursunuz.' },
+
+  // Accessibility labels (icon-only controls)
+  a11yMoveStepUp: { en: 'Move step up', de: 'Schritt nach oben', es: 'Subir paso', tr: 'Adımı yukarı taşı' },
+  a11yMoveStepDown: { en: 'Move step down', de: 'Schritt nach unten', es: 'Bajar paso', tr: 'Adımı aşağı taşı' },
+  a11yToggleView: { en: 'Toggle grid or list view', de: 'Raster- oder Listenansicht', es: 'Cambiar vista', tr: 'Izgara/liste görünümü' },
+  a11yMoreOptions: { en: 'More options', de: 'Weitere Optionen', es: 'Más opciones', tr: 'Diğer seçenekler' },
+  a11yReminders: { en: 'Reminder settings', de: 'Erinnerungseinstellungen', es: 'Ajustes de recordatorios', tr: 'Hatırlatma ayarları' },
 };
 
 export type TranslationKey = keyof typeof translations;
+
+const MONTHS_SHORT: Record<Locale, string[]> = {
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  de: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+  es: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+  tr: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+};
+
+/** Returns localized 3-letter month abbreviations for the given locale. */
+export function getMonthsShort(locale: Locale): string[] {
+  return MONTHS_SHORT[locale] ?? MONTHS_SHORT.tr;
+}
 
 export function getTranslation(locale: Locale, key: TranslationKey): string {
   const entry = translations[key];

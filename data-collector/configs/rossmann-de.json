@@ -1,0 +1,27 @@
+{
+  "id": "rossmann-de",
+  "name": "Rossmann",
+  "baseUrl": "https://www.rossmann.de",
+  "strategy": "playwright",
+  "listing": {
+    "urlTemplate": "https://www.rossmann.de/de/pflege-und-duft/gesichtspflege/c/olcat2_2?pageIndex={{page}}",
+    "productLinkSelector": "/html/body/main/div[2]/div/div[2]/div[2]/div[3]/div[1]/div[2]/div/div/div[1]/div[1]/div[2]/div[2]/a",
+    "maxPages": 5,
+    "maxProducts": 50
+  },
+  "selectors": {
+    "name": ".rm-product__title",
+    "brand": ".rm-product__brand",
+    "description": "#GRP_PRODUKTDETAILS",
+    "image": ".rm-product__image source",
+    "ingredients": "#GRP_INHALTSSTOFFE > div > div > p",
+    "size": "body > div.rm-wrapper > div.rm-site > div > main > section > div > div:nth-child(2) > div.rm-grid__col--12.rm-grid__col-lg--4 > div > div:nth-child(2) > div.rm-grid__col.rm-grid__col-order-lg--1 > div.rm-product__units > strong:nth-child(1)",
+    "howToUse": "#GRP_ANWENDUNGGEBRAUCH > div > div > p",
+    "claims": ".product-badges span",
+    "spf": "",
+    "shelfLife": "",
+    "category": "body > div.rm-wrapper > div.rm-site > div > main > div > ol > li:nth-child(2) > a"
+  },
+  "preActions": [],
+  "rateLimit": { "concurrency": 1, "delayMs": 2000 }
+}

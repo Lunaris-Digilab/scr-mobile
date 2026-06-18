@@ -13,6 +13,7 @@ import type {
 export async function getProducts(options?: {
   search?: string;
   category?: ProductCategory;
+  categoryId?: string;
   brand?: string;
   texture?: ProductTexture;
   usage_time?: UsageTime;
@@ -31,7 +32,11 @@ export async function getProducts(options?: {
     query = query.or(`name.ilike.%${term}%,brand.ilike.%${term}%`);
   }
   if (options?.category) {
-    query = query.eq('category', options.category);
+    if (options.categoryId) {
+      query = query.or(`category.eq.${options.category},category_id.eq.${options.categoryId}`);
+    } else {
+      query = query.eq('category', options.category);
+    }
   }
   if (options?.brand?.trim()) {
     query = query.ilike('brand', `%${options.brand.trim()}%`);

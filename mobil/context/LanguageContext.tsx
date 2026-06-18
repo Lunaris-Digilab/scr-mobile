@@ -40,7 +40,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: keyof typeof import('../constants/translations').translations) => {
+    (key: TranslationKey) => {
       const currentLocale = locale ?? 'tr';
       return getTranslation(currentLocale, key);
     },

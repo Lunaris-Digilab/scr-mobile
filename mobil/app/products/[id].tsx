@@ -21,7 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Ellipsis, ShoppingCart, Star, CheckCircle2, Sun, Moon } from 'lucide-react-native';
+import { ArrowLeft, Plus, Check, Package, Heart, Star, CheckCircle2, Sun, Moon } from 'lucide-react-native';
 
 import { Colors, Shadows } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
@@ -29,9 +29,10 @@ import { useLanguage } from '../../context/LanguageContext';
 import type { TranslationKey } from '../../constants/translations';
 import { getProductById } from '../../lib/products';
 import { getOrCreateRoutine, addStepToRoutine } from '../../lib/routines';
+import { addToShelf, getExistingUserProduct, updateUserProduct } from '../../lib/user-products';
 import { supabase } from '../../lib/supabase';
 import type { Product, ProductCategory } from '../../types/product';
-import { getProductBrandDisplay } from '../../types/product';
+import { getProductBrandDisplay, formatProductSize, TEXTURE_LABELS } from '../../types/product';
 import { Skeleton } from '../../components/Skeleton';
 import { BottomSheet } from '../../components/BottomSheet';
 import { haptic } from '../../lib/haptics';
@@ -54,6 +55,9 @@ export default function ProductDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
   const [routineSheetVisible, setRoutineSheetVisible] = useState(false);
+  const [shelfSheetVisible, setShelfSheetVisible] = useState(false);
+  const [isOnShelf, setIsOnShelf] = useState(false);
+  const [savingShelf, setSavingShelf] = useState(false);
 
   // Parallax scroll
   const scrollY = useSharedValue(0);
@@ -129,29 +133,60 @@ export default function ProductDetailScreen() {
       .then((data) => { if (!cancelled) setProduct(data); })
       .catch((e) => console.error(e))
       .finally(() => { if (!cancelled) setLoading(false); });
+    // Check if already on shelf
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user || cancelled) return;
+      getExistingUserProduct(user.id, id).then((existing) => {
+        if (!cancelled && existing) setIsOnShelf(true);
+      }).catch(() => {});
+    });
     return () => { cancelled = true; };
   }, [id]);
 
-  const benefits = useMemo(() => {
-    if (!product?.category) {
-      return [t('productBenefitOne'), t('productBenefitTwo'), t('productBenefitThree')];
+  const handleAddToShelf = async (status: 'opened' | 'wishlist') => {
+    if (!product) return;
+    try {
+      setSavingShelf(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const existing = await getExistingUserProduct(user.id, product.id);
+      if (existing) {
+        await updateUserProduct(existing.id, { status });
+      } else {
+        await addToShelf(user.id, product.id, status);
+      }
+      setIsOnShelf(true);
+      haptic.success();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingShelf(false);
     }
-    switch (product.category) {
-      case 'cleanser':
-        return [t('productCleanserBenefitOne'), t('productCleanserBenefitTwo'), t('productCleanserBenefitThree')];
-      case 'serum':
-      case 'treatment':
-        return [t('productSerumBenefitOne'), t('productSerumBenefitTwo'), t('productSerumBenefitThree')];
-      case 'moisturizer':
-      case 'mask':
-      case 'eye_cream':
-        return [t('productMoisturizerBenefitOne'), t('productMoisturizerBenefitTwo'), t('productMoisturizerBenefitThree')];
-      case 'sunscreen':
-        return [t('productSunscreenBenefitOne'), t('productSunscreenBenefitTwo'), t('productSunscreenBenefitThree')];
-      default:
-        return [t('productBenefitOne'), t('productBenefitTwo'), t('productBenefitThree')];
+  };
+
+  const productDetails = useMemo(() => {
+    if (!product) return [];
+    const details: { label: string; value: string }[] = [];
+    if (product.description) details.push({ label: t('productDescription'), value: product.description });
+    const size = formatProductSize(product);
+    if (size) details.push({ label: t('addProductSize'), value: size });
+    if (product.texture) details.push({ label: t('addProductTexture'), value: TEXTURE_LABELS[product.texture] ?? product.texture });
+    if (product.spf) details.push({ label: 'SPF', value: String(product.spf) });
+    if (product.usage_time) {
+      const timeLabels: Record<string, string> = { AM: t('routineMorning'), PM: t('routineEvening'), both: t('addProductBothAmPm') };
+      details.push({ label: t('addProductUsageTime'), value: timeLabels[product.usage_time] ?? product.usage_time });
     }
-  }, [product?.category, t]);
+    if (product.target_area) details.push({ label: t('addProductTargetArea'), value: product.target_area });
+    if (product.shelf_life_months) details.push({ label: t('productShelfLife'), value: `${product.shelf_life_months} ${t('productMonths')}` });
+    const certs: string[] = [];
+    if (product.is_cruelty_free) certs.push('Cruelty-Free');
+    if (product.is_vegan) certs.push('Vegan');
+    if (product.is_fragrance_free) certs.push('Fragrance-Free');
+    if (product.is_paraben_free) certs.push('Paraben-Free');
+    if (product.is_alcohol_free) certs.push('Alcohol-Free');
+    if (certs.length > 0) details.push({ label: t('addProductCertifications'), value: certs.join(' • ') });
+    return details;
+  }, [product, t]);
 
   const ingredients = useMemo(() => {
     if (!product?.ingredients_text?.trim()) return [];
@@ -205,7 +240,7 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const rating = Math.max(1, Math.min(5, Math.round(product.rating ?? 4)));
+  const rating = product.rating ? Math.max(1, Math.min(5, Math.round(product.rating))) : 0;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -239,11 +274,18 @@ export default function ProductDetailScreen() {
             <ArrowLeft size={18} color={Colors.text} />
           </Pressable>
           <View style={styles.topRightRow}>
-            <Pressable style={styles.topIconButton}>
-              <ShoppingCart size={18} color={Colors.text} />
-            </Pressable>
-            <Pressable style={styles.topIconButton}>
-              <Ellipsis size={18} color={Colors.text} />
+            <Pressable
+              style={[styles.topIconButton, isOnShelf && styles.topIconButtonActive]}
+              onPress={() => {
+                haptic.light();
+                setShelfSheetVisible(true);
+              }}
+            >
+              {isOnShelf ? (
+                <Check size={18} color={Colors.white} strokeWidth={3} />
+              ) : (
+                <Plus size={18} color={Colors.text} />
+              )}
             </Pressable>
           </View>
         </View>
@@ -274,35 +316,39 @@ export default function ProductDetailScreen() {
           <Text style={styles.brand}>
             {getProductBrandDisplay(product) ?? getCategoryLabel(product.category, t)}
           </Text>
-          <View style={styles.ratingRow}>
-            <View style={styles.starsRow}>
-              {Array.from({ length: 5 }).map((_, idx) => (
-                <Star
-                  key={String(idx)}
-                  size={16}
-                  color={idx < rating ? '#C78B4D' : Colors.lightGray}
-                  fill={idx < rating ? '#C78B4D' : 'transparent'}
-                />
-              ))}
+          {rating > 0 && (
+            <View style={styles.ratingRow}>
+              <View style={styles.starsRow}>
+                {Array.from({ length: 5 }).map((_, idx) => (
+                  <Star
+                    key={String(idx)}
+                    size={16}
+                    color={idx < rating ? '#C78B4D' : Colors.lightGray}
+                    fill={idx < rating ? '#C78B4D' : 'transparent'}
+                  />
+                ))}
+              </View>
             </View>
-            <Text style={styles.reviewCount}>4,245 {t('productReviewsLabel')}</Text>
-          </View>
+          )}
         </Animated.View>
 
         <View style={styles.sectionCard}>
           {activeTab === 'details' && (
             <Animated.View entering={FadeInDown.duration(300)}>
-              <Text style={styles.sectionTitle}>{t('productBenefits')}</Text>
-              {benefits.map((item, i) => (
-                <Animated.View
-                  key={item}
-                  entering={FadeInDown.delay(i * 80).duration(300)}
-                  style={styles.benefitRow}
-                >
-                  <CheckCircle2 size={18} color={Colors.success} />
-                  <Text style={styles.benefitText}>{item}</Text>
-                </Animated.View>
-              ))}
+              {productDetails.length > 0 ? (
+                productDetails.map((item, i) => (
+                  <Animated.View
+                    key={item.label}
+                    entering={FadeInDown.delay(i * 60).duration(300)}
+                    style={styles.detailRow}
+                  >
+                    <Text style={styles.detailLabel}>{item.label}</Text>
+                    <Text style={styles.detailValue}>{item.value}</Text>
+                  </Animated.View>
+                ))
+              ) : (
+                <Text style={styles.placeholderText}>{t('productNoDetails')}</Text>
+              )}
             </Animated.View>
           )}
 
@@ -381,6 +427,33 @@ export default function ProductDetailScreen() {
           },
         ]}
       />
+
+      {/* Add to Shelf Bottom Sheet */}
+      <BottomSheet
+        visible={shelfSheetVisible}
+        onClose={() => setShelfSheetVisible(false)}
+        title={t('shelfAddProduct')}
+        message={product.name}
+        actions={[
+          {
+            label: t('shelfMyShelf'),
+            icon: <Package size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => handleAddToShelf('opened'),
+          },
+          {
+            label: t('shelfWishlist'),
+            icon: <Heart size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => handleAddToShelf('wishlist'),
+          },
+          {
+            label: t('cancel'),
+            variant: 'default',
+            onPress: () => {},
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -434,6 +507,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.glass,
+  },
+  topIconButtonActive: {
+    backgroundColor: Colors.success,
   },
   topLeft: {
     position: 'absolute',
@@ -508,11 +584,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
   },
-  reviewCount: {
-    fontSize: 16,
-    fontFamily: Typography.regular,
-    color: Colors.textSecondary,
-  },
 
   /* Section */
   sectionCard: {
@@ -527,18 +598,26 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 14,
   },
-  benefitRow: {
+  detailRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border,
   },
-  benefitText: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontFamily: Typography.regular,
+  detailLabel: {
+    fontSize: 14,
+    fontFamily: Typography.semibold,
     color: Colors.textSecondary,
-    flexShrink: 1,
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontFamily: Typography.regular,
+    color: Colors.text,
+    flex: 1.5,
+    textAlign: 'right',
   },
   placeholderText: {
     fontSize: 16,

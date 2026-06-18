@@ -2,13 +2,17 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Search,
   Plus,
-  Mic,
   ChevronDown,
   ChevronRight,
-  Bookmark,
+  Package,
+  Heart,
+  Check,
   LayoutGrid,
+  List,
   Sun,
   Moon,
+  ScanLine,
+  PencilLine,
 } from 'lucide-react-native';
 import {
   StyleSheet,
@@ -33,9 +37,12 @@ import Animated, {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
+import { isCurrentUserAdmin } from '../lib/profile-role';
 import { getProducts } from '../lib/products';
+import { getCategories } from '../lib/categories';
 import { getOrCreateRoutine, addStepToRoutine } from '../lib/routines';
 import { addToShelf, getExistingUserProduct, updateUserProduct } from '../lib/user-products';
+import type { Category } from '../types/category';
 import type { Product } from '../types/product';
 import type { RoutineType } from '../types/routine';
 import type { UserProductStatus } from '../types/user-product';
@@ -63,16 +70,23 @@ export default function ProductsScreen() {
   const fabBottomOffset = insets.bottom + (Platform.OS === 'ios' ? 96 : 82);
   const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
   const CATEGORIES = CATEGORY_KEYS.map((key) => ({ key, label: getCategoryLabel(key, t) }));
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ProductCategory | ''>('');
   const [addingToRoutine, setAddingToRoutine] = useState<string | null>(null);
   const [addingToShelf, setAddingToShelf] = useState<string | null>(null);
+  const [addedToShelf, setAddedToShelf] = useState<Set<string>>(new Set());
+  const [shelfSheetProduct, setShelfSheetProduct] = useState<Product | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Routine bottom sheet
   const [routineSheetProduct, setRoutineSheetProduct] = useState<Product | null>(null);
+  // Add-options sheet (scan vs manual) — scan is admin-only
+  const [addSheetVisible, setAddSheetVisible] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Animated search
   const searchBorderColor = useSharedValue(0);
@@ -88,12 +102,25 @@ export default function ProductsScreen() {
     searchElevation.value = withTiming(searchFocused ? 1 : 0, { duration: 200 });
   }, [searchFocused]);
 
+  useEffect(() => {
+    getCategories().then(setDbCategories).catch(() => {});
+    isCurrentUserAdmin().then(setIsAdmin).catch(() => setIsAdmin(false));
+  }, []);
+
+  const findCategoryId = useCallback((key: ProductCategory): string | undefined => {
+    const match = dbCategories.find(
+      (c) => c.name.toLowerCase().replace(/[- ]/g, '_') === key
+    );
+    return match?.id;
+  }, [dbCategories]);
+
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       const list = await getProducts({
         search: search.trim() || undefined,
         category: categoryFilter || undefined,
+        categoryId: categoryFilter ? findCategoryId(categoryFilter) : undefined,
         limit: 100,
       });
       setProducts(list);
@@ -102,7 +129,7 @@ export default function ProductsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter]);
+  }, [search, categoryFilter, findCategoryId]);
 
   useEffect(() => {
     const delay = setTimeout(loadProducts, 300);
@@ -156,6 +183,7 @@ export default function ProductsScreen() {
       } else {
         await addToShelf(user.id, product.id, status);
       }
+      setAddedToShelf((prev) => new Set(prev).add(product.id));
       haptic.success();
     } catch (e) {
       console.error(e);
@@ -164,10 +192,57 @@ export default function ProductsScreen() {
     }
   };
 
+  const renderProductList = ({ item, index }: { item: Product; index: number }) => {
+    const isAddingShelf = addingToShelf === item.id;
+    const isAlreadyOnShelf = addedToShelf.has(item.id);
+
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 30).duration(300)}>
+        <Pressable
+          style={styles.listCard}
+          onPress={() => router.push({ pathname: '/products/[id]', params: { id: item.id } })}
+        >
+          <View style={styles.listImageWrap}>
+            {item.image_url ? (
+              <Image source={{ uri: item.image_url }} style={styles.listImage} resizeMode="cover" />
+            ) : (
+              <View style={[styles.listImagePlaceholder, { backgroundColor: index % 2 === 0 ? Colors.light : Colors.mediumLight }]}>
+                <Text style={styles.listImagePlaceholderText}>{item.name.charAt(0)}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.listBody}>
+            <Text style={styles.listName} numberOfLines={1}>{item.name}</Text>
+            {!!getProductBrandDisplay(item) && (
+              <Text style={styles.listBrand} numberOfLines={1}>{getProductBrandDisplay(item)}</Text>
+            )}
+          </View>
+          <Pressable
+            style={[styles.bookmarkButton, isAlreadyOnShelf && styles.bookmarkButtonActive]}
+            accessibilityRole="button"
+            accessibilityLabel={t('shelfAddProduct')}
+            onPress={() => {
+              haptic.light();
+              setShelfSheetProduct(item);
+            }}
+            disabled={isAddingShelf}
+          >
+            {isAlreadyOnShelf ? (
+              <Check size={18} color={Colors.white} strokeWidth={3} />
+            ) : (
+              <Plus size={18} color={Colors.textSecondary} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Animated.View>
+    );
+  };
+
   const renderProduct = ({ item, index }: { item: Product; index: number }) => {
     const isAdding = addingToRoutine === item.id;
     const isAddingShelf = addingToShelf === item.id;
     const isBusy = isAdding || isAddingShelf;
+    const isAlreadyOnShelf = addedToShelf.has(item.id);
 
     return (
       <Animated.View
@@ -217,17 +292,26 @@ export default function ProductsScreen() {
                   <ActivityIndicator size="small" color={Colors.text} />
                 ) : (
                   <>
-                    <Text style={styles.viewButtonText}>View Details</Text>
+                    <Text style={styles.viewButtonText}>{t('viewDetails')}</Text>
                     <ChevronRight size={16} color={Colors.text} />
                   </>
                 )}
               </Pressable>
               <Pressable
-                style={styles.bookmarkButton}
-                onPress={() => handleAddToShelf(item, 'wishlist')}
+                style={[styles.bookmarkButton, isAlreadyOnShelf && styles.bookmarkButtonActive]}
+                accessibilityRole="button"
+                accessibilityLabel={t('shelfAddProduct')}
+                onPress={() => {
+                  haptic.light();
+                  setShelfSheetProduct(item);
+                }}
                 disabled={isBusy}
               >
-                <Bookmark size={20} color={Colors.textSecondary} />
+                {isAlreadyOnShelf ? (
+                  <Check size={20} color={Colors.white} strokeWidth={3} />
+                ) : (
+                  <Plus size={20} color={Colors.textSecondary} />
+                )}
               </Pressable>
             </View>
           </View>
@@ -240,8 +324,21 @@ export default function ProductsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
         <Text style={styles.headerTitle}>{t('productsTitle')}</Text>
-        <Pressable style={styles.headerIcon} hitSlop={12}>
-          <LayoutGrid size={22} color={Colors.text} />
+        <Pressable
+          style={styles.headerIcon}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11yToggleView')}
+          onPress={() => {
+            haptic.selection();
+            setViewMode((prev) => (prev === 'grid' ? 'list' : 'grid'));
+          }}
+        >
+          {viewMode === 'grid' ? (
+            <List size={22} color={Colors.text} />
+          ) : (
+            <LayoutGrid size={22} color={Colors.text} />
+          )}
         </Pressable>
       </Animated.View>
 
@@ -261,10 +358,8 @@ export default function ProductsScreen() {
             onChangeText={setSearch}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
+            returnKeyType="search"
           />
-          <Pressable hitSlop={12} style={{ padding: 4 }}>
-            <Mic size={18} color={Colors.textSecondary} />
-          </Pressable>
         </Animated.View>
       </View>
 
@@ -313,14 +408,14 @@ export default function ProductsScreen() {
         <FlatList
           data={products}
           keyExtractor={(item) => item.id}
-          renderItem={renderProduct}
-          numColumns={2}
-          key="products-grid"
+          renderItem={viewMode === 'grid' ? renderProduct : renderProductList}
+          numColumns={viewMode === 'grid' ? 2 : 1}
+          key={viewMode}
           contentContainerStyle={[
             styles.listContent,
             { paddingBottom: insets.bottom + 170 },
           ]}
-          columnWrapperStyle={styles.gridRow}
+          columnWrapperStyle={viewMode === 'grid' ? styles.gridRow : undefined}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <Animated.View entering={FadeInUp.duration(500)} style={styles.empty}>
@@ -340,9 +435,13 @@ export default function ProductsScreen() {
       >
         <Pressable
           style={styles.fabInner}
+          accessibilityRole="button"
+          accessibilityLabel={t('productsAddProduct')}
           onPress={() => {
             haptic.medium();
-            router.push('/products/add');
+            // Scan (camera + AI) is admin-only; others go straight to manual add.
+            if (isAdmin) setAddSheetVisible(true);
+            else router.push('/products/add');
           }}
         >
           <Plus size={20} color={Colors.white} />
@@ -372,6 +471,63 @@ export default function ProductsScreen() {
             onPress: () => {
               if (routineSheetProduct) addProductToRoutine(routineSheetProduct, 'PM');
             },
+          },
+          {
+            label: t('cancel'),
+            variant: 'default',
+            onPress: () => {},
+          },
+        ]}
+      />
+
+      {/* Add to Shelf Bottom Sheet */}
+      <BottomSheet
+        visible={!!shelfSheetProduct}
+        onClose={() => setShelfSheetProduct(null)}
+        title={t('shelfAddProduct')}
+        message={shelfSheetProduct ? shelfSheetProduct.name : ''}
+        actions={[
+          {
+            label: t('shelfMyShelf'),
+            icon: <Package size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => {
+              if (shelfSheetProduct) handleAddToShelf(shelfSheetProduct, 'opened');
+            },
+          },
+          {
+            label: t('shelfWishlist'),
+            icon: <Heart size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => {
+              if (shelfSheetProduct) handleAddToShelf(shelfSheetProduct, 'wishlist');
+            },
+          },
+          {
+            label: t('cancel'),
+            variant: 'default',
+            onPress: () => {},
+          },
+        ]}
+      />
+
+      {/* Add options: scan or manual */}
+      <BottomSheet
+        visible={addSheetVisible}
+        onClose={() => setAddSheetVisible(false)}
+        title={t('productsAddProduct')}
+        actions={[
+          {
+            label: t('addProductScanProduct'),
+            icon: <ScanLine size={20} color={Colors.text} />,
+            variant: 'primary',
+            onPress: () => router.push('/products/scan'),
+          },
+          {
+            label: t('addProductAddManually'),
+            icon: <PencilLine size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => router.push('/products/add'),
           },
           {
             label: t('cancel'),
@@ -419,7 +575,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderWidth: 1.5,
     borderColor: Colors.border,
-    shadowColor: '#8f5c74',
+    shadowColor: Colors.shadowTint,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
     elevation: 0,
@@ -591,6 +747,59 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: Colors.light,
     borderRadius: 19,
+  },
+  bookmarkButtonActive: {
+    backgroundColor: Colors.success,
+  },
+
+  /* List View */
+  listCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 8,
+    marginHorizontal: 8,
+    ...Shadows.card,
+  },
+  listImageWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: Colors.lightGray,
+  },
+  listImage: {
+    width: '100%',
+    height: '100%',
+  },
+  listImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listImagePlaceholderText: {
+    fontSize: 20,
+    fontFamily: Typography.bold,
+    color: Colors.gray,
+  },
+  listBody: {
+    flex: 1,
+    marginLeft: 12,
+    minWidth: 0,
+  },
+  listName: {
+    fontSize: 15,
+    fontFamily: Typography.semibold,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  listBrand: {
+    fontSize: 13,
+    fontFamily: Typography.regular,
+    color: Colors.textSecondary,
   },
 
   /* FAB */

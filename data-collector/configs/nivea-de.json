@@ -1,0 +1,30 @@
+{
+  "id": "nivea-de",
+  "name": "nivea de",
+  "baseUrl": "https://www.nivea.de/produkte",
+  "strategy": "cheerio",
+  "listing": {
+    "urlTemplate": "https://www.nivea.de/produkte",
+    "productLinkSelector": ".nx-product-teaser__link-wrapper",
+    "maxPages": 5,
+    "maxProducts": 50
+  },
+  "selectors": {
+    "name": "#main > div.nx-main-inner > div.nx-u-pt-base-1.nx-u-pb-base-1.nx-u-container.nx-u-txt--center > h1",
+    "brand": "",
+    "description": "#main > div.nx-main-inner > section:nth-child(4) > div > div.nx-two-columns__half-col.nx-u-justify-start > section.nx-product-description.nx-u-section--separator.nx-u-pt-base-3.nx-u-pb-base-3.nx-expand-section--show-on-mobile-only.nx-hidden-expandable.nx-expand-section.nx-expand-section__background--desktop > div > div > div > p",
+    "image": "#main > div.nx-main-inner > section:nth-child(4) > div > div:nth-child(1) > section > div > div > div > div.nx-product-stage__grid--vertical.nx-scroll--list.swiper-wrapper > div:nth-child(1) > div > picture > img",
+    "ingredients": "#liste-der-inhaltsstoffe > div > div > p.nx-ingredients__section.nx-ingredients--breaks-always",
+    "size": "",
+    "howToUse": "#mehr-zu-diesem-produkt-erfahren > div > div > div > div",
+    "claims": "",
+    "spf": "",
+    "shelfLife": "",
+    "category": "body > section > nav > div > div > ul > li:nth-child(4) > a"
+  },
+  "preActions": [],
+  "rateLimit": {
+    "concurrency": 1,
+    "delayMs": 2000
+  }
+}

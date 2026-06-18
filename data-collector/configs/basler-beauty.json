@@ -1,0 +1,30 @@
+{
+  "id": "basler-beauty",
+  "name": "basler beauty",
+  "baseUrl": "https://www.basler-beauty.de",
+  "strategy": "playwright",
+  "listing": {
+    "urlTemplate": "https://www.basler-beauty.de/pflege/?pgNr={{page}}",
+    "productLinkSelector": "#Data > ul > li:nth-child(1) > a",
+    "maxPages": 5,
+    "maxProducts": 50
+  },
+  "selectors": {
+    "name": "//*[@id=\"wrapper\"]/div[2]/div[2]/div/form/div[2]/div/div[2]/div[2]/div/div/h1/div[1]",
+    "brand": "//*[@id=\"wrapper\"]/div[2]/div[2]/div/form/div[2]/div/div[2]/div[2]/div/div/h1/a",
+    "description": "//*[@id=\"wrapper\"]/div[2]/div[2]/div/div[3]/div/div/div[4]",
+    "image": "//*[@id=\"wrapper\"]/div[2]/div[2]/div/form/div[2]/div/div[1]/div[2]/div[1]/div/div/div/div[1]/img",
+    "ingredients": "#ingredients > div > p:nth-child(1)",
+    "size": "",
+    "howToUse": "",
+    "claims": "",
+    "spf": "",
+    "shelfLife": "",
+    "category": ""
+  },
+  "preActions": [],
+  "rateLimit": {
+    "concurrency": 1,
+    "delayMs": 2000
+  }
+}

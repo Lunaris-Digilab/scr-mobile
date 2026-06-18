@@ -1,0 +1,30 @@
+{
+  "id": "amazon-de",
+  "name": "Amazon DE",
+  "baseUrl": "https://www.amazon.de/",
+  "strategy": "playwright",
+  "listing": {
+    "urlTemplate": "https://www.amazon.de/gp/bestsellers/beauty/ref=zg_bs_pg_2_beauty?ie=UTF8&pg={{page}}",
+    "productLinkSelector": "//*[@id=\"B08P4YPB8Q\"]/div/div/a",
+    "maxPages": 5,
+    "maxProducts": 50
+  },
+  "selectors": {
+    "name": "#productTitle",
+    "brand": "#poExpander > div.a-expander-content.a-expander-partial-collapse-content > div > table > tbody > tr.a-spacing-small.po-brand > td.a-span9 > span",
+    "description": "#feature-bullets > ul",
+    "image": "#a-page > img",
+    "ingredients": "",
+    "size": "",
+    "howToUse": "",
+    "claims": "",
+    "spf": "",
+    "shelfLife": "",
+    "category": ""
+  },
+  "preActions": [],
+  "rateLimit": {
+    "concurrency": 1,
+    "delayMs": 2000
+  }
+}

@@ -23,7 +23,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.anonymous.glowist",
+      bundleIdentifier: "com.lunarisdigilab.glowist",
     },
     android: {
       adaptiveIcon: {
@@ -32,7 +32,7 @@ module.exports = {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      package: "com.anonymous.glowist",
+      package: "com.lunarisdigilab.glowist",
     },
     web: { favicon: "./assets/favicon.png" },
     plugins: [
@@ -41,6 +41,19 @@ module.exports = {
       [
         requirePlugin("@react-native-google-signin/google-signin/app.plugin.js"),
         { iosUrlScheme: "com.googleusercontent.apps.838895646158-uqtknhlnhga5vmqa6n6pn0u97qslb7en" },
+      ],
+      [
+        requirePlugin("expo-camera/app.plugin"),
+        {
+          cameraPermission: "Glowist, ürün ve etiket fotoğrafı çekebilmek için kamerayı kullanır.",
+          recordAudioAndroid: false,
+        },
+      ],
+      [
+        requirePlugin("expo-image-picker/app.plugin"),
+        {
+          photosPermission: "Glowist, ürün fotoğrafı seçebilmek için galerinize erişir.",
+        },
       ],
     ],
     extra: {

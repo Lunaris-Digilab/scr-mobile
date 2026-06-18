@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glowist Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ══════════ LOGIN ══════════ -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card card">
+      <h1><span>&#10024;</span> Glowist Admin</h1>
+      <p class="login-sub">Editör girişi</p>
+      <form id="loginForm">
+        <input class="form-input" id="loginEmail" type="email" placeholder="E-posta" autocomplete="username" />
+        <input class="form-input" id="loginPassword" type="password" placeholder="Şifre" autocomplete="current-password" />
+        <button class="btn btn-primary" type="submit" id="loginBtn">Giriş yap</button>
+      </form>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ APP SHELL ══════════ -->
+  <div id="appShell" class="shell" style="display:none;">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>&#10024;</span> Glowist Admin</div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="products">&#128230; Ürünler</button>
+        <button class="nav-item" data-view="brands">&#127991; Markalar</button>
+        <button class="nav-item" data-view="ingredients">&#129514; İçerikler</button>
+        <button class="nav-item nav-secondary" data-view="scraper">&#128376; Scraper</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span id="currentUser" class="current-user"></span>
+        <button id="logoutBtn" class="btn btn-ghost btn-sm">Çıkış</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- ───── PRODUCTS ───── -->
+      <section id="view-products" class="view active">
+
+        <!-- List -->
+        <div id="productsList">
+          <div class="view-header">
+            <h2>Ürünler</h2>
+            <button class="btn btn-primary" onclick="newProduct()">+ Ürün Ekle</button>
+          </div>
+          <div class="toolbar">
+            <input id="productSearch" class="form-input" placeholder="&#128269; İsim / marka ara…" />
+            <select id="productCategoryFilter" class="form-input form-select">
+              <option value="">Kategori: Tümü</option>
+            </select>
+          </div>
+          <div class="card" style="padding:0; overflow:hidden;">
+            <table class="data-table">
+              <thead><tr><th style="width:48px;"></th><th>İsim</th><th>Marka</th><th>Kategori</th><th style="width:90px;"></th></tr></thead>
+              <tbody id="productsBody"><tr><td colspan="5" class="table-empty">Yükleniyor…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <span id="productsCount" class="pager-count"></span>
+            <div class="pager-controls">
+              <button class="btn btn-ghost btn-sm" id="prevPage">‹ Önceki</button>
+              <span id="pageInfo" class="page-info"></span>
+              <button class="btn btn-ghost btn-sm" id="nextPage">Sonraki ›</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <div id="productForm" style="display:none;">
+          <div class="view-header">
+            <h2 id="formTitle">Ürün Ekle</h2>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost" onclick="closeForm()">İptal</button>
+              <button class="btn btn-primary" id="saveProductBtn" onclick="saveProduct()">&#128190; Kaydet</button>
+            </div>
+          </div>
+
+          <form id="pForm" onsubmit="return false;">
+            <input type="hidden" name="id" />
+
+            <!-- Temel -->
+            <div class="form-section">
+              <div class="form-section-title">Temel bilgiler</div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Ürün adı *</label><input class="form-input" name="name" /></div>
+                <div class="form-group"><label class="form-label">Marka</label><div class="brand-row"><select class="form-input form-select" name="company_id"><option value="">— Marka seç —</option></select><button type="button" class="btn btn-secondary btn-sm" id="newBrandBtn">+ Yeni</button></div></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Kategori</label><select class="form-input form-select" name="category_id"><option value="">—</option></select></div>
+                <div class="form-group"><label class="form-label">Barkod</label><input class="form-input" name="barcode" /></div>
+              </div>
+              <div class="form-group"><label class="form-label">Açıklama</label><textarea class="form-input" name="description" rows="3"></textarea></div>
+              <div class="form-group">
+                <label class="form-label">Görsel</label>
+                <div class="image-row">
+                  <img id="imagePreview" class="image-preview" alt="" />
+                  <input type="file" id="imageFile" accept="image/*" hidden />
+                  <button type="button" class="btn btn-secondary btn-sm" id="uploadBtn">&#128228; Görsel yükle</button>
+                  <input class="form-input" name="image_url" placeholder="veya görsel URL yapıştır" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Boyut & kullanım -->
+            <div class="form-section">
+              <div class="form-section-title">Boyut & kullanım</div>
+              <div class="form-row-3">
+                <div class="form-group"><label class="form-label">Boyut</label><input class="form-input" name="size_value" type="number" step="any" /></div>
+                <div class="form-group"><label class="form-label">Birim</label><select class="form-input form-select" name="size_unit"></select></div>
+                <div class="form-group"><label class="form-label">Doku</label><select class="form-input form-select" name="texture"></select></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label class="form-label">Kullanım sıklığı</label><select class="form-input form-select" name="usage_frequency"></select></div>
+                <div class="form-group"><label class="form-label">Zaman</label><select class="form-input form-select" name="usage_time"></select></div>
+                <div class="form-group"><label class="form-label">Hedef bölge</label><select class="form-input form-select" name="target_area"></select></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label class="form-label">SPF</label><input class="form-input" name="spf" type="number" /></div>
+                <div class="form-group"><label class="form-label">pH</label><input class="form-input" name="ph_level" type="number" step="any" /></div>
+                <div class="form-group"><label class="form-label">Raf ömrü (ay)</label><input class="form-input" name="shelf_life_months" type="number" /></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Menşe ülke</label><input class="form-input" name="country_of_origin" /></div>
+              </div>
+              <div class="form-group"><label class="form-label">Kullanım talimatı</label><textarea class="form-input" name="usage_instructions" rows="2"></textarea></div>
+            </div>
+
+            <!-- Bayraklar -->
+            <div class="form-section">
+              <div class="form-section-title">Özellik bayrakları</div>
+              <div class="flags">
+                <label class="flag"><input type="checkbox" name="is_cruelty_free" /> Cruelty-free</label>
+                <label class="flag"><input type="checkbox" name="is_vegan" /> Vegan</label>
+                <label class="flag"><input type="checkbox" name="is_fragrance_free" /> Fragrance-free</label>
+                <label class="flag"><input type="checkbox" name="is_paraben_free" /> Paraben-free</label>
+                <label class="flag"><input type="checkbox" name="is_alcohol_free" /> Alcohol-free</label>
+              </div>
+            </div>
+
+            <!-- İçerikler -->
+            <div class="form-section">
+              <div class="form-section-title">İçerikler</div>
+              <div class="form-group"><label class="form-label">Ham INCI metni</label><textarea class="form-input" name="ingredients_text" rows="2"></textarea></div>
+              <div class="form-group">
+                <label class="form-label">İçerik listesi (sıralı)</label>
+                <div id="ingredientTags" class="tags"></div>
+                <input class="form-input" id="ingredientInput" placeholder="+ içerik ekle, Enter'a bas" list="ingredientList" autocomplete="off" />
+                <datalist id="ingredientList"></datalist>
+              </div>
+            </div>
+
+            <!-- Cilt tipleri / sorunları -->
+            <div class="form-section">
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Cilt tipleri</label><div id="skinTypesBox" class="checkbox-grid"></div></div>
+                <div class="form-group"><label class="form-label">Cilt sorunları</label><div id="concernsBox" class="checkbox-grid"></div></div>
+              </div>
+            </div>
+
+            <!-- Diğer -->
+            <div class="form-section" style="border-bottom:none;">
+              <label class="flag"><input type="checkbox" name="is_private" /> Özel/private ürün (katalogda gizli)</label>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ───── BRANDS ───── -->
+      <section id="view-brands" class="view">
+        <div class="view-header"><h2>Markalar</h2><button class="btn btn-primary" id="addBrandBtn">+ Marka Ekle</button></div>
+        <div class="toolbar"><input id="brandSearch" class="form-input" placeholder="&#128269; Marka ara…" /></div>
+        <p class="hint">Buradan veya ürün formundaki "Marka → + Yeni" ile marka ekleyebilirsin.</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+          <table class="data-table"><tbody id="brandsBody"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ───── INGREDIENTS ───── -->
+      <section id="view-ingredients" class="view">
+        <div class="view-header"><h2>İçerikler</h2></div>
+        <div class="toolbar"><input id="ingredientSearch" class="form-input" placeholder="&#128269; İçerik ara…" /></div>
+        <p class="hint">Yeni içerikler ürün formundaki içerik listesine eklendiğinde otomatik oluşturulur. Burada mevcutları görebilirsin.</p>
+        <div class="card" style="padding:0; overflow:hidden;">
+          <table class="data-table"><tbody id="ingredientsBody"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ───── SCRAPER (secondary) ───── -->
+      <section id="view-scraper" class="view">
+
+        <!-- Progress bar -->
+        <div id="progressBar" class="progress-bar">
+          <div class="progress-bar-header">
+            <span id="progressSite">Scraping...</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
+          <div id="progressStatus" class="progress-status">Starting...</div>
+        </div>
+
+        <div id="scraperDashboard">
+          <div class="view-header">
+            <h2>Scraper — Siteler</h2>
+            <button class="btn btn-primary" onclick="showEditor()">+ Add Site</button>
+          </div>
+          <div id="sitesGrid" class="sites-grid"></div>
+
+          <div class="section-header" style="margin-top:32px;">
+            <h2>Scrape Results</h2>
+            <button class="btn btn-ghost btn-sm" onclick="loadResults()">Refresh</button>
+          </div>
+          <div class="card" style="padding:0; overflow:hidden;">
+            <table class="results-table">
+              <thead><tr><th>File</th><th>Site</th><th>Products</th><th>Errors</th><th>Date</th></tr></thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Scraper editor -->
+        <div id="editor" class="editor">
+          <div class="editor-header">
+            <h2 id="editorTitle">Add New Site</h2>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost" onclick="hideEditor()">Cancel</button>
+              <button class="btn btn-primary" onclick="saveSite()">Save Site</button>
+            </div>
+          </div>
+          <form id="siteForm" onsubmit="return false;">
+            <div class="form-section">
+              <div class="form-section-title">Basic Info</div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Site ID (slug)</label><input class="form-input" name="id" placeholder="e.g. sephora-tr" required /></div>
+                <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" name="name" placeholder="e.g. Sephora Turkey" required /></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Base URL</label><input class="form-input" name="baseUrl" placeholder="https://www.sephora.com.tr" required /></div>
+                <div class="form-group"><label class="form-label">Strategy</label><select class="form-input form-select" name="strategy"><option value="playwright">Playwright (JS-rendered)</option><option value="cheerio">Cheerio (Static HTML)</option></select></div>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">Listing / Pagination</div>
+              <div class="form-group"><label class="form-label">URL Template (use {{page}} for page number)</label><input class="form-input" name="listing.urlTemplate" placeholder="https://example.com/products?page={{page}}" /></div>
+              <div class="form-group"><label class="form-label">Product Link Selector (CSS or XPath)</label><input class="form-input" name="listing.productLinkSelector" placeholder="a.product-card" /></div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Max Pages</label><input class="form-input" name="listing.maxPages" type="number" value="5" /></div>
+                <div class="form-group"><label class="form-label">Max Products</label><input class="form-input" name="listing.maxProducts" type="number" value="50" /></div>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">Product Page Selectors</div>
+              <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">CSS selectors or XPath expressions to extract data from each product page.</p>
+              <div id="selectorsContainer"></div>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">Pre-Actions (before scraping)</div>
+              <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Actions to perform before extracting data (e.g. click "Show Ingredients").</p>
+              <div id="preactionsList" class="preaction-list"></div>
+              <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="addPreaction()">+ Add Action</button>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">Rate Limiting</div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Concurrency</label><input class="form-input" name="rateLimit.concurrency" type="number" value="1" min="1" max="5" /></div>
+                <div class="form-group"><label class="form-label">Delay (ms)</label><input class="form-input" name="rateLimit.delayMs" type="number" value="2000" min="500" step="500" /></div>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">Selector Tester</div>
+              <div class="form-row">
+                <div class="form-group"><label class="form-label">Test URL</label><input class="form-input" id="testUrl" placeholder="https://example.com/product" /></div>
+                <div class="form-group"><label class="form-label">Selector</label><div style="display:flex;gap:6px;"><input class="form-input" id="testSelector" placeholder="h1.product-name" /><button type="button" class="btn btn-secondary btn-sm" onclick="testSelector()">Test</button></div></div>
+              </div>
+              <div id="testResult" class="test-result"></div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal (generic prompt) -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal card">
+      <h3 id="modalTitle" class="modal-title"></h3>
+      <input id="modalInput" class="form-input" />
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modalCancel">İptal</button>
+        <button class="btn btn-primary" id="modalOk">Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="auth.js"></script>
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

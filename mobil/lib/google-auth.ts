@@ -94,13 +94,14 @@ export async function signInWithGoogle(): Promise<GoogleAuthResult> {
 
       // Kullanıcı iptal etti
       if (isErrorWithCode(error)) {
+        const code = (error as { code?: unknown }).code;
         if (
-          error.code === statusCodes.SIGN_IN_CANCELLED ||
-          error.code === statusCodes.IN_PROGRESS
+          code === statusCodes.SIGN_IN_CANCELLED ||
+          code === statusCodes.IN_PROGRESS
         ) {
           return { success: false, cancelled: true, message: '' };
         }
-        if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        if (code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
           return {
             success: false,
             cancelled: false,

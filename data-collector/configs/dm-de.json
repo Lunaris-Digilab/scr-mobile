@@ -1,0 +1,30 @@
+{
+  "id": "dm-de",
+  "name": "DM DE",
+  "baseUrl": "https://www.dm.de/",
+  "strategy": "playwright",
+  "listing": {
+    "urlTemplate": "https://www.dm.de/pflege-und-parfum?allCategories.id0=020000&pageSize0=10&sort0=editorial_relevance&currentPage0={{page}}",
+    "productLinkSelector": "#dm-view > div > div > div > ol > li:nth-child(1) > div > a",
+    "maxPages": 5,
+    "maxProducts": 50
+  },
+  "selectors": {
+    "name": "//*[@id=\"app\"]/div/main/div[2]/div[1]/div[2]/div[1]/div[1]/h1",
+    "brand": "//*[@id=\"app\"]/div/main/div[2]/div[1]/div[2]/div[1]/div[1]/h1/span/a",
+    "description": "//*[@id=\"app\"]/div/main/div[2]/div[1]/div[3]/div[2]/details[1]/div",
+    "image": "//*[@id=\"detail-image-container\"]/div[1]/div/ol/li[1]/div/button/img",
+    "ingredients": "//*[@id=\"app\"]/div/main/div[2]/div[1]/div[3]/div[2]/details[3]/div/div/div/div/div",
+    "size": "",
+    "howToUse": "//*[@id=\"app\"]/div/main/div[2]/div[1]/div[3]/div[2]/details[4]/div/div/div/div/div",
+    "claims": "",
+    "spf": "",
+    "shelfLife": "",
+    "category": "//*[@id=\"composing-breadcrumb\"]/ol/li[4]/a"
+  },
+  "preActions": [],
+  "rateLimit": {
+    "concurrency": 1,
+    "delayMs": 2000
+  }
+}
