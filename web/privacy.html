@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Glowist</title>
+  <meta name="description" content="Glowist Privacy Policy — How we collect, use, and protect your personal data." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    /* ===== Privacy Page Specific Styles ===== */
+    .privacy-hero {
+      padding-top: 64px;
+      background: linear-gradient(160deg, var(--color-bg) 0%, #EDE5DF 60%, #E8DDD6 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .privacy-hero::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      right: -60px;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(221, 187, 149, 0.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    .privacy-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -40px;
+      left: -40px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(180, 163, 143, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .privacy-hero-inner {
+      padding: 64px 24px 56px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .privacy-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .privacy-breadcrumb a {
+      color: var(--color-primary);
+      font-weight: 600;
+      transition: color var(--transition);
+    }
+
+    .privacy-breadcrumb a:hover {
+      color: var(--color-gold);
+    }
+
+    .privacy-breadcrumb-sep {
+      opacity: 0.4;
+    }
+
+    .privacy-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(221, 187, 149, 0.15);
+      border: 1px solid rgba(221, 187, 149, 0.3);
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-gold);
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .privacy-hero-title {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      color: var(--color-text);
+      margin-bottom: 16px;
+    }
+
+    .privacy-hero-title span {
+      background: linear-gradient(135deg, var(--color-gold), var(--color-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .privacy-hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .privacy-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--color-text-secondary);
+    }
+
+    .privacy-meta-item svg {
+      color: var(--color-primary);
+    }
+
+    /* ===== Layout ===== */
+    .privacy-layout {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 64px 24px 100px;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 56px;
+      align-items: start;
+    }
+
+    /* ===== Sticky TOC ===== */
+    .privacy-toc {
+      position: sticky;
+      top: 88px;
+    }
+
+    .privacy-toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--color-text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .privacy-toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .privacy-toc-list li a {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      border-left: 2px solid transparent;
+      transition: all var(--transition);
+      line-height: 1.4;
+    }
+
+    .privacy-toc-list li a:hover,
+    .privacy-toc-list li a.active {
+      color: var(--color-gold);
+      background: rgba(199, 139, 77, 0.06);
+      border-left-color: var(--color-gold);
+    }
+
+    .privacy-toc-divider {
+      height: 1px;
+      background: var(--color-border);
+      margin: 16px 0;
+    }
+
+    .privacy-toc-contact {
+      background: linear-gradient(135deg, rgba(199, 139, 77, 0.08), rgba(221, 187, 149, 0.12));
+      border: 1px solid rgba(221, 187, 149, 0.25);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .privacy-toc-contact p {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .privacy-toc-contact a {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-gold);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .privacy-toc-contact a:hover {
+      text-decoration: underline;
+    }
+
+    /* ===== Content ===== */
+    .privacy-content {
+      min-width: 0;
+    }
+
+    .privacy-section {
+      margin-bottom: 56px;
+      scroll-margin-top: 88px;
+    }
+
+    .privacy-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .privacy-section-number {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--color-primary);
+      margin-bottom: 8px;
+    }
+
+    .privacy-section-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: var(--color-text);
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .privacy-section p {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--color-text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .privacy-section p:last-child {
+      margin-bottom: 0;
+    }
+
+    .privacy-section strong {
+      color: var(--color-text);
+      font-weight: 700;
+    }
+
+    /* ===== Data Table ===== */
+    .privacy-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+    }
+
+    .privacy-table thead {
+      background: linear-gradient(135deg, var(--color-dark), #4A3F39);
+      color: var(--color-card);
+    }
+
+    .privacy-table thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .privacy-table tbody tr {
+      border-bottom: 1px solid var(--color-border);
+      transition: background var(--transition);
+    }
+
+    .privacy-table tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .privacy-table tbody tr:hover {
+      background: rgba(180, 163, 143, 0.06);
+    }
+
+    .privacy-table td {
+      padding: 12px 16px;
+      vertical-align: top;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+
+    .privacy-table td:first-child {
+      font-weight: 600;
+      color: var(--color-text);
+      white-space: nowrap;
+    }
+
+    /* ===== Lists ===== */
+    .privacy-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .privacy-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 15px;
+      color: var(--color-text-secondary);
+      line-height: 1.65;
+    }
+
+    .privacy-list li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-secondary);
+      flex-shrink: 0;
+      margin-top: 9px;
+    }
+
+    /* ===== Highlight Box ===== */
+    .privacy-highlight {
+      background: linear-gradient(135deg, rgba(47, 178, 126, 0.06), rgba(47, 178, 126, 0.1));
+      border: 1px solid rgba(47, 178, 126, 0.2);
+      border-left: 3px solid var(--color-success);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+
+    .privacy-highlight p {
+      font-size: 14px;
+      color: var(--color-text);
+      margin: 0;
+    }
+
+    .privacy-highlight-warn {
+      background: linear-gradient(135deg, rgba(199, 139, 77, 0.06), rgba(221, 187, 149, 0.1));
+      border-color: rgba(199, 139, 77, 0.2);
+      border-left-color: var(--color-gold);
+    }
+
+    /* ===== Rights Cards ===== */
+    .privacy-rights-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .privacy-right-card {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: transform var(--transition), box-shadow var(--transition);
+    }
+
+    .privacy-right-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card-hover);
+    }
+
+    .privacy-right-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(180, 163, 143, 0.12);
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .privacy-right-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 6px;
+    }
+
+    .privacy-right-desc {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ===== Contact Card ===== */
+    .privacy-contact-card {
+      background: linear-gradient(135deg, var(--color-dark) 0%, #4A3F39 100%);
+      border-radius: var(--radius);
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .privacy-contact-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(221, 187, 149, 0.15);
+      color: var(--color-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .privacy-contact-text h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-card);
+      margin-bottom: 4px;
+    }
+
+    .privacy-contact-text p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      margin: 0;
+    }
+
+    .privacy-contact-text a {
+      color: var(--color-secondary);
+      font-weight: 600;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 900px) {
+      .privacy-layout {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        padding: 48px 24px 80px;
+      }
+
+      .privacy-toc {
+        position: static;
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius);
+        padding: 20px;
+      }
+
+      .privacy-toc-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+      }
+
+      .privacy-toc-list li a {
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+
+      .privacy-toc-list li a:hover,
+      .privacy-toc-list li a.active {
+        border-left-color: transparent;
+        border-bottom-color: var(--color-gold);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .privacy-rights-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .privacy-contact-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 24px;
+        gap: 16px;
+      }
+
+      .privacy-table {
+        font-size: 12px;
+      }
+
+      .privacy-table td,
+      .privacy-table thead th {
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== NAV ========== -->
+  <nav class="nav">
+    <div class="nav-inner container">
+      <a href="index.html" class="nav-logo">
+        <span class="nav-logo-icon">&#10024;</span>
+        Glowist
+      </a>
+      <div class="nav-links">
+        <a href="index.html#features">Features</a>
+        <a href="index.html#how-it-works">How It Works</a>
+        <a href="index.html#download" class="nav-cta">Download</a>
+      </div>
+      <button class="nav-mobile-toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========== PRIVACY HERO ========== -->
+  <div class="privacy-hero">
+    <div class="privacy-hero-inner container">
+      <div class="privacy-breadcrumb">
+        <a href="index.html">Home</a>
+        <span class="privacy-breadcrumb-sep">/</span>
+        <span>Privacy Policy</span>
+      </div>
+      <div class="privacy-hero-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Legal Document
+      </div>
+      <h1 class="privacy-hero-title">Privacy <span>Policy</span></h1>
+      <div class="privacy-hero-meta">
+        <div class="privacy-meta-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Last updated: June 14, 2025
+        </div>
+        <div class="privacy-meta-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ~5 min read
+        </div>
+        <div class="privacy-meta-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Effective for Android &amp; iOS
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CONTENT ========== -->
+  <div class="privacy-layout">
+
+    <!-- Sidebar TOC -->
+    <aside class="privacy-toc">
+      <p class="privacy-toc-title">Table of Contents</p>
+      <ul class="privacy-toc-list">
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#data-collected">Data We Collect</a></li>
+        <li><a href="#how-we-use">How We Use Data</a></li>
+        <li><a href="#sharing">Data Sharing</a></li>
+        <li><a href="#retention">Data Retention</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#your-rights">Your Rights</a></li>
+        <li><a href="#children">Children's Privacy</a></li>
+        <li><a href="#third-party">Third-Party Services</a></li>
+        <li><a href="#changes">Policy Changes</a></li>
+        <li><a href="#contact">Contact Us</a></li>
+      </ul>
+
+      <div class="privacy-toc-divider"></div>
+
+      <div class="privacy-toc-contact">
+        <p>Questions about this policy?</p>
+        <a href="mailto:privacy@glowist.app">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          privacy@glowist.app
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="privacy-content">
+
+      <!-- 1. Overview -->
+      <section class="privacy-section" id="overview">
+        <div class="privacy-section-number">Section 01</div>
+        <h2 class="privacy-section-title">Overview</h2>
+        <p>Welcome to Glowist ("we," "our," or "us"). Glowist is a skincare routine tracker application available on Android and iOS. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use the Glowist mobile application and any related services (collectively, the "Service").</p>
+        <p>By downloading, installing, or using Glowist, you agree to the terms of this Privacy Policy. If you do not agree with this policy, please do not use the Service.</p>
+        <div class="privacy-highlight">
+          <p><strong>Our commitment:</strong> We only collect information that is necessary to provide and improve the Glowist experience. We do not sell your personal data to third parties.</p>
+        </div>
+      </section>
+
+      <!-- 2. Data Collected -->
+      <section class="privacy-section" id="data-collected">
+        <div class="privacy-section-number">Section 02</div>
+        <h2 class="privacy-section-title">Data We Collect</h2>
+        <p>We collect different types of information depending on how you use the Service. This includes information you provide directly, information generated automatically through your use of the app, and, in some cases, information from third-party sources.</p>
+
+        <table class="privacy-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Examples</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Account Information</td>
+              <td>Email address, display name, profile photo</td>
+              <td>Create and manage your account</td>
+            </tr>
+            <tr>
+              <td>Skin Profile</td>
+              <td>Skin type, concerns (acne, dryness, etc.), allergies, climate</td>
+              <td>Personalize your routine recommendations</td>
+            </tr>
+            <tr>
+              <td>Routine Data</td>
+              <td>Products added, steps completed, streak counts, routine schedules</td>
+              <td>Core app functionality and progress tracking</td>
+            </tr>
+            <tr>
+              <td>Product Data</td>
+              <td>Product names, brands, categories, expiration dates you enter</td>
+              <td>Manage your product shelf</td>
+            </tr>
+            <tr>
+              <td>Usage Analytics</td>
+              <td>Features used, session duration, app performance data</td>
+              <td>Improve app stability and user experience</td>
+            </tr>
+            <tr>
+              <td>Device Information</td>
+              <td>Device model, OS version, unique device identifiers, language settings</td>
+              <td>Troubleshooting and compatibility</td>
+            </tr>
+            <tr>
+              <td>Notification Preferences</td>
+              <td>Reminder times, notification opt-in/out status</td>
+              <td>Send daily routine reminders</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>We do <strong>not</strong> collect sensitive health or medical data, payment information (the app is free), location data, or contacts from your device.</p>
+      </section>
+
+      <!-- 3. How We Use -->
+      <section class="privacy-section" id="how-we-use">
+        <div class="privacy-section-number">Section 03</div>
+        <h2 class="privacy-section-title">How We Use Your Data</h2>
+        <p>We use the information we collect for the following purposes:</p>
+        <ul class="privacy-list">
+          <li><strong>To provide the Service:</strong> Deliver core features such as routine tracking, product shelf management, streak counting, and progress visualization.</li>
+          <li><strong>To personalize your experience:</strong> Use your skin profile to tailor content, recommendations, and in-app suggestions.</li>
+          <li><strong>To send notifications:</strong> Deliver daily AM/PM routine reminders and milestone celebration alerts (only with your permission).</li>
+          <li><strong>To improve the app:</strong> Analyze aggregated, anonymized usage patterns to fix bugs, improve features, and optimize performance.</li>
+          <li><strong>To communicate with you:</strong> Respond to support requests, send important service updates, and notify you of changes to this policy.</li>
+          <li><strong>To ensure security:</strong> Detect fraudulent activity, prevent abuse, and protect the integrity of our Service.</li>
+          <li><strong>To comply with legal obligations:</strong> Meet applicable data protection and regulatory requirements.</li>
+        </ul>
+        <p>We do <strong>not</strong> use your data for automated profiling that produces legal or similarly significant effects, nor do we use your data to serve third-party advertisements within the app.</p>
+      </section>
+
+      <!-- 4. Sharing -->
+      <section class="privacy-section" id="sharing">
+        <div class="privacy-section-number">Section 04</div>
+        <h2 class="privacy-section-title">Data Sharing &amp; Disclosure</h2>
+        <p>We do not sell, trade, or rent your personal information to third parties. We may share your data only in the following limited circumstances:</p>
+
+        <ul class="privacy-list">
+          <li><strong>Service Providers:</strong> We work with trusted third-party vendors who assist us in operating the app (e.g., cloud hosting, analytics, crash reporting). These providers are contractually obligated to use your data only to perform services on our behalf and to protect it appropriately.</li>
+          <li><strong>Authentication Partners:</strong> If you sign in with Google or Apple, those platforms handle authentication. Please review their respective privacy policies for details on how they process your information.</li>
+          <li><strong>Legal Requirements:</strong> We may disclose your information if required to do so by law or in response to valid requests from public authorities (e.g., a court or government agency).</li>
+          <li><strong>Business Transfers:</strong> In the event of a merger, acquisition, or sale of all or part of our assets, your data may be transferred as part of that transaction. We will notify you via email and/or a prominent notice in the app if such a transfer occurs.</li>
+          <li><strong>With Your Consent:</strong> We may share your information for any other purpose with your explicit consent.</li>
+        </ul>
+
+        <div class="privacy-highlight privacy-highlight-warn">
+          <p><strong>We never sell your data.</strong> Your personal information is not a product. Glowist's business model does not involve monetizing user data with advertisers or data brokers.</p>
+        </div>
+      </section>
+
+      <!-- 5. Retention -->
+      <section class="privacy-section" id="retention">
+        <div class="privacy-section-number">Section 05</div>
+        <h2 class="privacy-section-title">Data Retention</h2>
+        <p>We retain your personal data for as long as your account is active or as needed to provide the Service. Specifically:</p>
+        <ul class="privacy-list">
+          <li><strong>Active accounts:</strong> Your routine data, skin profile, and product shelf are stored for the duration of your account's existence so you can access your history at any time.</li>
+          <li><strong>Deleted accounts:</strong> When you delete your account through the app, we permanently delete your personal data within <strong>30 days</strong>, except where we are required to retain certain information for legal compliance purposes.</li>
+          <li><strong>Anonymized analytics:</strong> Aggregated, de-identified usage data may be retained indefinitely as it can no longer be linked to you personally.</li>
+          <li><strong>Backup systems:</strong> Deleted data may persist in encrypted backups for up to <strong>90 days</strong> before being permanently purged.</li>
+        </ul>
+        <p>You can request deletion of your account and all associated data at any time through the app's Settings &gt; Account &gt; Delete Account, or by contacting us at privacy@glowist.app.</p>
+      </section>
+
+      <!-- 6. Security -->
+      <section class="privacy-section" id="security">
+        <div class="privacy-section-number">Section 06</div>
+        <h2 class="privacy-section-title">Security</h2>
+        <p>Protecting your data is a priority for us. We implement industry-standard technical and organizational security measures, including:</p>
+        <ul class="privacy-list">
+          <li>Encryption of data in transit using TLS (Transport Layer Security)</li>
+          <li>Encryption of data at rest in our cloud infrastructure</li>
+          <li>Secure authentication options including Google Sign-In and Apple Sign-In with OAuth 2.0</li>
+          <li>Strict access controls — only authorized personnel can access user data, on a need-to-know basis</li>
+          <li>Regular security assessments and vulnerability testing</li>
+        </ul>
+        <p>While we take these steps to safeguard your information, no method of electronic storage or internet transmission is 100% secure. We cannot guarantee absolute security, and you use the Service at your own risk. If you believe your account has been compromised, please contact us immediately.</p>
+      </section>
+
+      <!-- 7. Your Rights -->
+      <section class="privacy-section" id="your-rights">
+        <div class="privacy-section-number">Section 07</div>
+        <h2 class="privacy-section-title">Your Rights</h2>
+        <p>Depending on your location, you may have the following rights regarding your personal data:</p>
+
+        <div class="privacy-rights-grid">
+          <div class="privacy-right-card">
+            <div class="privacy-right-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="privacy-right-title">Right to Access</div>
+            <p class="privacy-right-desc">Request a copy of the personal data we hold about you.</p>
+          </div>
+          <div class="privacy-right-card">
+            <div class="privacy-right-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <div class="privacy-right-title">Right to Rectification</div>
+            <p class="privacy-right-desc">Correct inaccurate or incomplete personal data we hold about you.</p>
+          </div>
+          <div class="privacy-right-card">
+            <div class="privacy-right-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </div>
+            <div class="privacy-right-title">Right to Deletion</div>
+            <p class="privacy-right-desc">Request deletion of your personal data ("right to be forgotten").</p>
+          </div>
+          <div class="privacy-right-card">
+            <div class="privacy-right-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
+            </div>
+            <div class="privacy-right-title">Right to Portability</div>
+            <p class="privacy-right-desc">Receive your data in a structured, machine-readable format.</p>
+          </div>
+          <div class="privacy-right-card">
+            <div class="privacy-right-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            </div>
+            <div class="privacy-right-title">Right to Object</div>
+            <p class="privacy-right-desc">Object to certain types of processing, including for direct marketing.</p>
+          </div>
+          <div class="privacy-right-card">
+            <div class="privacy-right-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <div class="privacy-right-title">Opt-Out of Notifications</div>
+            <p class="privacy-right-desc">Disable push notifications at any time via app settings or device settings.</p>
+          </div>
+        </div>
+
+        <p>To exercise any of these rights, please contact us at <strong>privacy@glowist.app</strong>. We will respond to your request within 30 days. We may need to verify your identity before processing certain requests.</p>
+      </section>
+
+      <!-- 8. Children -->
+      <section class="privacy-section" id="children">
+        <div class="privacy-section-number">Section 08</div>
+        <h2 class="privacy-section-title">Children's Privacy</h2>
+        <p>Glowist is not directed to children under the age of <strong>13</strong> (or under 16 in the European Economic Area). We do not knowingly collect personal information from children below these age thresholds.</p>
+        <p>If you are a parent or guardian and believe that your child has provided us with personal information without your consent, please contact us at privacy@glowist.app. We will promptly investigate and, if confirmed, delete any such information from our systems.</p>
+        <p>If we discover that we have inadvertently collected information from a child under the applicable age of consent, we will take immediate steps to delete that data.</p>
+      </section>
+
+      <!-- 9. Third-Party -->
+      <section class="privacy-section" id="third-party">
+        <div class="privacy-section-number">Section 09</div>
+        <h2 class="privacy-section-title">Third-Party Services</h2>
+        <p>Glowist integrates with certain third-party services to provide core functionality. Each of these services has its own privacy policy, and we encourage you to review them:</p>
+        <ul class="privacy-list">
+          <li><strong>Google Sign-In:</strong> Used for optional authentication. Governed by Google's Privacy Policy.</li>
+          <li><strong>Apple Sign-In:</strong> Used for optional authentication on iOS. Governed by Apple's Privacy Policy.</li>
+          <li><strong>Firebase (Google):</strong> Used for backend infrastructure, authentication, and crash reporting. Governed by Google's Privacy Policy.</li>
+          <li><strong>Analytics Provider:</strong> We use a privacy-respecting analytics solution to collect anonymized, aggregated app usage data. No personally identifiable information is shared.</li>
+        </ul>
+        <p>Our app may contain links to third-party websites or services. We are not responsible for the privacy practices of those third parties, and this Privacy Policy does not apply to them.</p>
+      </section>
+
+      <!-- 10. Changes -->
+      <section class="privacy-section" id="changes">
+        <div class="privacy-section-number">Section 10</div>
+        <h2 class="privacy-section-title">Policy Changes</h2>
+        <p>We may update this Privacy Policy from time to time to reflect changes in our practices, legal requirements, or app features. When we make material changes, we will:</p>
+        <ul class="privacy-list">
+          <li>Update the "Last updated" date at the top of this page</li>
+          <li>Send a push notification or in-app alert for significant changes</li>
+          <li>For major changes, request your renewed consent where required by law</li>
+        </ul>
+        <p>We encourage you to review this Privacy Policy periodically. Your continued use of the Service after the effective date of any changes constitutes your acceptance of the updated policy.</p>
+        <div class="privacy-highlight">
+          <p>Previous versions of this policy are available upon request. Contact privacy@glowist.app to request a prior version.</p>
+        </div>
+      </section>
+
+      <!-- 11. Contact -->
+      <section class="privacy-section" id="contact">
+        <div class="privacy-section-number">Section 11</div>
+        <h2 class="privacy-section-title">Contact Us</h2>
+        <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please do not hesitate to reach out. We are committed to addressing your inquiries promptly and transparently.</p>
+
+        <div class="privacy-contact-card">
+          <div class="privacy-contact-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div class="privacy-contact-text">
+            <h4>Glowist Privacy Team</h4>
+            <p>Email us at <a href="mailto:privacy@glowist.app">privacy@glowist.app</a> — we respond within 2 business days.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="nav-logo-icon">&#10024;</span>
+        <span class="footer-brand-name">Glowist</span>
+      </div>
+      <div class="footer-links">
+        <a href="privacy.html" style="color: var(--color-gold); font-weight: 600;">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Contact</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 Glowist. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Nav toggle
+    const toggle = document.querySelector('.nav-mobile-toggle');
+    const links = document.querySelector('.nav-links');
+    toggle.addEventListener('click', () => links.classList.toggle('open'));
+
+    // TOC active state on scroll
+    const sections = document.querySelectorAll('.privacy-section');
+    const tocLinks = document.querySelectorAll('.privacy-toc-list a');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tocLinks.forEach(link => link.classList.remove('active'));
+          const active = document.querySelector(`.privacy-toc-list a[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+  </script>
+
+</body>
+</html>

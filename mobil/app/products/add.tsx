@@ -13,18 +13,26 @@ import {
   Switch,
   Modal,
   FlatList,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { createProduct } from '../../lib/products';
+import { createProduct, getProducts } from '../../lib/products';
 import { getCategories } from '../../lib/categories';
 import { searchCompanies, getOrCreateCompany } from '../../lib/companies';
 import { addStepToRoutine } from '../../lib/routines';
+import { supabase } from '../../lib/supabase';
+import { prepareImage, uploadProductPhoto, type PreparedImage } from '../../lib/storage';
+import { takePendingPrefill } from '../../lib/product-prefill';
 import type { Category } from '../../types/category';
 import type { Company } from '../../types/company';
-import type { ProductTexture, UsageTime, SizeUnit, TargetArea } from '../../types/product';
+import type { Product, ProductTexture, UsageTime, SizeUnit, TargetArea, ProductCategory } from '../../types/product';
+import { getProductBrandDisplay } from '../../types/product';
 import { Colors } from '../../constants/Colors';
+import type { TranslationKey } from '../../constants/translations';
 import { useLanguage } from '../../context/LanguageContext';
-import { ChevronDown, Lock, Star, Search, Plus } from 'lucide-react-native';
+import { BottomSheet } from '../../components/BottomSheet';
+import { ChevronDown, Lock, Star, Search, Plus, ImagePlus, Camera, ImageIcon, Sparkles } from 'lucide-react-native';
 
 type ProductType = 'commercial' | 'other';
 
@@ -44,12 +52,19 @@ export default function AddProductScreen() {
   const [brandLoading, setBrandLoading] = useState(false);
 
   const [name, setName] = useState('');
+  const [nameSuggestions, setNameSuggestions] = useState<Product[]>([]);
+  const [nameSuggestionsLoading, setNameSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [rating, setRating] = useState<number>(0);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [additionalExpanded, setAdditionalExpanded] = useState(false);
   const [ingredients, setIngredients] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [photo, setPhoto] = useState<PreparedImage | null>(null);
+  const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null);
+  const [photoSheetVisible, setPhotoSheetVisible] = useState(false);
+  const [prefillSource, setPrefillSource] = useState<'barcode' | 'ai' | null>(null);
+  const [prefillCategory, setPrefillCategory] = useState<ProductCategory | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
@@ -74,6 +89,86 @@ export default function AddProductScreen() {
       .catch(() => setCategories([]))
       .finally(() => setLoadingCategories(false));
   }, []);
+
+  // Consume a scan/barcode/AI prefill handed off from the scan screen (once).
+  useEffect(() => {
+    const p = takePendingPrefill();
+    if (!p) return;
+    if (p.name) setName(p.name);
+    if (p.brand) setBrandSearch(p.brand);
+    if (p.ingredients_text) setIngredients(p.ingredients_text);
+    if (p.description) setDescription(p.description);
+    if (p.size_value != null) setSizeValue(String(p.size_value));
+    if (p.size_unit) setSizeUnit(p.size_unit);
+    if (p.spf != null) setSpf(String(p.spf));
+    if (p.texture) setTexture(p.texture);
+    if (p.usage_time) setUsageTime(p.usage_time);
+    if (p.target_area) setTargetArea(p.target_area);
+    if (p.is_vegan) setIsVegan(true);
+    if (p.is_cruelty_free) setIsCrueltyFree(true);
+    if (p.is_fragrance_free) setIsFragranceFree(true);
+    if (p.is_paraben_free) setIsParabenFree(true);
+    if (p.is_alcohol_free) setIsAlcoholFree(true);
+    if (p.category) setPrefillCategory(p.category);
+    if (p.photo) setPhoto(p.photo);
+    else if (p.imageUrl) setRemoteImageUrl(p.imageUrl);
+    if (p.source) setPrefillSource(p.source);
+    if (p.autoFilledKeys?.length) setAdditionalExpanded(true);
+  }, []);
+
+  // Map a prefilled category enum to the matching category row once loaded.
+  useEffect(() => {
+    if (!prefillCategory || categories.length === 0) return;
+    const match = categories.find(
+      (c) => c.name.toLowerCase().replace(/[- ]/g, '_') === prefillCategory
+    );
+    if (match) setCategoryId(match.id);
+    setPrefillCategory(null);
+  }, [prefillCategory, categories]);
+
+  // Product name search debounce
+  useEffect(() => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) {
+      setNameSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setNameSuggestionsLoading(true);
+    const timer = setTimeout(() => {
+      getProducts({ search: trimmed, limit: 5 })
+        .then((results) => {
+          setNameSuggestions(results);
+          setShowSuggestions(results.length > 0);
+        })
+        .catch(() => setNameSuggestions([]))
+        .finally(() => setNameSuggestionsLoading(false));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [name]);
+
+  const handleSelectExisting = (product: Product) => {
+    setShowSuggestions(false);
+    if (routineId) {
+      // From routine - add to routine directly
+      addStepToRoutine(routineId, {
+        name: product.name,
+        description: getProductBrandDisplay(product) || t('product'),
+        product_id: product.id,
+        order: 0,
+      }).then(() => {
+        Alert.alert(t('addProductSaved'), t('addProductSavedAndRoutine'), [
+          { text: t('addProductOk'), onPress: () => router.back() },
+        ]);
+      }).catch((e) => {
+        console.error(e);
+        Alert.alert(t('error'), t('addProductSaveFailed'));
+      });
+    } else {
+      // Navigate to product detail
+      router.replace({ pathname: '/products/[id]', params: { id: product.id } });
+    }
+  };
 
   // Brand search debounce
   useEffect(() => {
@@ -111,6 +206,45 @@ export default function AddProductScreen() {
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
+  const getCategoryTranslation = (catName: string): string => {
+    const key = `prodCat_${catName.toLowerCase().replace(/[- ]/g, '_')}` as TranslationKey;
+    const translated = t(key);
+    // t() returns the key itself if not found
+    return translated !== key ? translated : catName;
+  };
+
+  const deriveCategoryEnum = (): ProductCategory | undefined => {
+    if (!selectedCategory) return undefined;
+    const normalized = selectedCategory.name.toLowerCase().replace(/[- ]/g, '_');
+    const valid: ProductCategory[] = ['cleanser', 'toner', 'serum', 'moisturizer', 'sunscreen', 'mask', 'eye_cream', 'treatment', 'other'];
+    return valid.find((v) => v === normalized);
+  };
+
+  const pickPhoto = async (source: 'camera' | 'library') => {
+    setPhotoSheetVisible(false);
+    try {
+      const perm =
+        source === 'camera'
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(t('error'), t('photoPermissionDenied'));
+        return;
+      }
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({ quality: 1, mediaTypes: ['images'] })
+          : await ImagePicker.launchImageLibraryAsync({ quality: 1, mediaTypes: ['images'] });
+      if (result.canceled || !result.assets?.[0]) return;
+      const prepared = await prepareImage(result.assets[0].uri);
+      setPhoto(prepared);
+      setRemoteImageUrl(null);
+    } catch (e) {
+      console.error(e);
+      Alert.alert(t('error'), t('photoPickFailed'));
+    }
+  };
+
   const handleSave = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -119,14 +253,22 @@ export default function AddProductScreen() {
     }
     setLoading(true);
     try {
+      let imageUrlValue: string | undefined;
+      if (photo) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) imageUrlValue = await uploadProductPhoto(user.id, photo);
+      } else if (remoteImageUrl) {
+        imageUrlValue = remoteImageUrl;
+      }
       const product = await createProduct({
         name: trimmedName,
         company_id: selectedBrand?.id ?? undefined,
         company_name: !selectedBrand ? brandSearch.trim() || undefined : undefined,
+        category: deriveCategoryEnum(),
         category_id: categoryId ?? undefined,
         description: description.trim() || undefined,
         ingredients_text: ingredients.trim() || undefined,
-        image_url: imageUrl.trim() || undefined,
+        image_url: imageUrlValue,
         is_private: isPrivate,
         rating: rating > 0 ? rating : undefined,
         size_value: sizeValue ? parseFloat(sizeValue) : undefined,
@@ -192,6 +334,14 @@ export default function AddProductScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {prefillSource && (
+          <View style={styles.prefillBanner}>
+            <Sparkles size={16} color={Colors.gold} />
+            <Text style={styles.prefillBannerText}>
+              {prefillSource === 'barcode' ? t('prefillBannerBarcode') : t('prefillBannerAi')}
+            </Text>
+          </View>
+        )}
         <Text style={styles.sectionLabel}>{t('addProductTypeLabel')}</Text>
         <View style={styles.typeRow}>
           <Pressable
@@ -230,7 +380,7 @@ export default function AddProductScreen() {
             disabled={loading}
           >
             <Text style={[styles.dropdownText, !selectedCategory && styles.dropdownPlaceholder]}>
-              {selectedCategory?.name ?? t('addProductNone')}
+              {selectedCategory ? getCategoryTranslation(selectedCategory.name) : t('addProductNone')}
             </Text>
             <ChevronDown size={18} color={Colors.textSecondary} />
           </Pressable>
@@ -253,9 +403,39 @@ export default function AddProductScreen() {
             placeholder={t('addProductNamePlaceholder')}
             placeholderTextColor={Colors.textSecondary}
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              if (!text.trim()) setShowSuggestions(false);
+            }}
             editable={!loading}
           />
+          {showSuggestions && nameSuggestions.length > 0 && (
+            <View style={styles.suggestionsWrap}>
+              <Text style={styles.suggestionsTitle}>{t('addProductExisting')}</Text>
+              {nameSuggestions.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSelectExisting(item)}
+                >
+                  <View style={styles.suggestionInfo}>
+                    <Text style={styles.suggestionName} numberOfLines={1}>{item.name}</Text>
+                    {!!getProductBrandDisplay(item) && (
+                      <Text style={styles.suggestionBrand} numberOfLines={1}>{getProductBrandDisplay(item)}</Text>
+                    )}
+                  </View>
+                  <ChevronDown size={16} color={Colors.textSecondary} style={{ transform: [{ rotate: '-90deg' }] }} />
+                </Pressable>
+              ))}
+              <Pressable
+                style={styles.suggestionNewBtn}
+                onPress={() => setShowSuggestions(false)}
+              >
+                <Plus size={16} color={Colors.primary} />
+                <Text style={styles.suggestionNewText}>{t('addProductCreateNew')}</Text>
+              </Pressable>
+            </View>
+          )}
 
           <View style={styles.privacyRow}>
             <Lock size={18} color={Colors.textSecondary} />
@@ -429,20 +609,63 @@ export default function AddProductScreen() {
               multiline
               numberOfLines={3}
             />
-            <Text style={styles.fieldLabel}>{t('addProductImageUrl')}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="https://..."
-              placeholderTextColor={Colors.textSecondary}
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              editable={!loading}
-              keyboardType="url"
-              autoCapitalize="none"
-            />
+            <Text style={styles.fieldLabel}>{t('addProductPhoto')}</Text>
+            {photo || remoteImageUrl ? (
+              <View style={styles.photoRow}>
+                <Image source={{ uri: photo?.uri ?? remoteImageUrl ?? undefined }} style={styles.photoPreview} />
+                <View style={styles.photoActions}>
+                  <Pressable
+                    style={styles.photoChangeBtn}
+                    onPress={() => setPhotoSheetVisible(true)}
+                    disabled={loading}
+                  >
+                    <Text style={styles.photoChangeText}>{t('addProductChangePhoto')}</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => { setPhoto(null); setRemoteImageUrl(null); }}
+                    hitSlop={8}
+                    disabled={loading}
+                  >
+                    <Text style={styles.photoRemoveText}>{t('delete')}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.photoAddBtn}
+                onPress={() => setPhotoSheetVisible(true)}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel={t('addProductAddPhoto')}
+              >
+                <ImagePlus size={20} color={Colors.primary} />
+                <Text style={styles.photoAddText}>{t('addProductAddPhoto')}</Text>
+              </Pressable>
+            )}
           </View>
         )}
       </ScrollView>
+
+      <BottomSheet
+        visible={photoSheetVisible}
+        onClose={() => setPhotoSheetVisible(false)}
+        title={t('addProductAddPhoto')}
+        actions={[
+          {
+            label: t('photoTakePhoto'),
+            icon: <Camera size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => pickPhoto('camera'),
+          },
+          {
+            label: t('photoChooseLibrary'),
+            icon: <ImageIcon size={20} color={Colors.text} />,
+            variant: 'default',
+            onPress: () => pickPhoto('library'),
+          },
+          { label: t('cancel'), variant: 'default', onPress: () => {} },
+        ]}
+      />
 
       <Modal
         visible={showCategoryPicker}
@@ -464,7 +687,9 @@ export default function AddProductScreen() {
                     setShowCategoryPicker(false);
                   }}
                 >
-                  <Text style={styles.modalItemText}>{item.name}</Text>
+                  <Text style={styles.modalItemText}>
+                    {item.id ? getCategoryTranslation(item.name) : item.name}
+                  </Text>
                 </Pressable>
               )}
             />
@@ -483,7 +708,7 @@ export default function AddProductScreen() {
         onRequestClose={() => setShowBrandPicker(false)}
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowBrandPicker(false)}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, styles.brandModalContent]}>
             <Text style={styles.modalTitle}>{t('addProductBrandSelect')}</Text>
             <View style={styles.brandSearchWrap}>
               <Search size={18} color={Colors.textSecondary} />
@@ -669,6 +894,71 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  photoAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.card,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 18,
+  },
+  photoAddText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  photoPreview: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    backgroundColor: Colors.lightGray,
+  },
+  photoActions: {
+    flex: 1,
+    gap: 8,
+  },
+  photoChangeBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.lightGray,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  photoChangeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  photoRemoveText: {
+    fontSize: 13,
+    color: Colors.error,
+    paddingHorizontal: 2,
+  },
+  prefillBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.light,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+  },
+  prefillBannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+  },
   privacyRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -731,7 +1021,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '70%',
+    maxHeight: '85%',
     paddingBottom: 24,
   },
   modalTitle: {
@@ -761,6 +1051,9 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   // Brand picker
+  brandModalContent: {
+    minHeight: '55%',
+  },
   brandSearchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -862,5 +1155,59 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 14,
     color: Colors.text,
+  },
+  // Name suggestions
+  suggestionsWrap: {
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  suggestionsTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+  },
+  suggestionInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  suggestionName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  suggestionBrand: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  suggestionNewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.light,
+  },
+  suggestionNewText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });

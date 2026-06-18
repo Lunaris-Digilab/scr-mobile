@@ -5,6 +5,7 @@ import {
   Pressable,
   StyleSheet,
   Dimensions,
+  Modal,
   type ViewStyle,
   type StyleProp,
 } from 'react-native';
@@ -15,14 +16,13 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../constants/Colors';
 import { Typography } from '../constants/Typography';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SPRING_CONFIG = { damping: 20, stiffness: 90 };
-const DISMISS_THRESHOLD = 150;
+const DISMISS_THRESHOLD = 100;
 
 export interface BottomSheetAction {
   label: string;
@@ -57,11 +57,11 @@ export function BottomSheet({
 
   useEffect(() => {
     if (visible) {
-      translateY.value = withSpring(0, SPRING_CONFIG);
-      backdropOpacity.value = withTiming(1, { duration: 250 });
+      translateY.value = withTiming(0, { duration: 250 });
+      backdropOpacity.value = withTiming(1, { duration: 200 });
     } else {
-      translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-      backdropOpacity.value = withTiming(0, { duration: 200 });
+      translateY.value = withTiming(SCREEN_HEIGHT, { duration: 200 });
+      backdropOpacity.value = withTiming(0, { duration: 150 });
     }
   }, [visible]);
 
@@ -74,11 +74,11 @@ export function BottomSheet({
     })
     .onEnd((event) => {
       if (event.translationY > DISMISS_THRESHOLD) {
-        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
-        backdropOpacity.value = withTiming(0, { duration: 200 });
+        translateY.value = withTiming(SCREEN_HEIGHT, { duration: 200 });
+        backdropOpacity.value = withTiming(0, { duration: 150 });
         runOnJS(onClose)();
       } else {
-        translateY.value = withSpring(0, SPRING_CONFIG);
+        translateY.value = withTiming(0, { duration: 200 });
       }
     });
 
@@ -90,61 +90,72 @@ export function BottomSheet({
     opacity: backdropOpacity.value,
   }));
 
-  if (!visible) return null;
-
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <GestureHandlerRootView style={styles.modalRoot}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <Animated.View style={[styles.backdrop, backdropStyle]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+          </Animated.View>
 
-      <GestureDetector gesture={panGesture}>
-        <Animated.View
-          style={[styles.sheet, { paddingBottom: insets.bottom + 16 }, sheetStyle, style]}
-        >
-          <View style={styles.handle} />
+          <GestureDetector gesture={panGesture}>
+            <Animated.View
+              style={[styles.sheet, { paddingBottom: insets.bottom + 16 }, sheetStyle, style]}
+            >
+              <View style={styles.handle} />
 
-          {title && <Text style={styles.title}>{title}</Text>}
-          {message && <Text style={styles.message}>{message}</Text>}
+              {title && <Text style={styles.title}>{title}</Text>}
+              {message && <Text style={styles.message}>{message}</Text>}
 
-          {children}
+              {children}
 
-          {actions && actions.length > 0 && (
-            <View style={styles.actionsWrap}>
-              {actions.map((action, i) => (
-                <Pressable
-                  key={i}
-                  style={[
-                    styles.actionBtn,
-                    action.variant === 'destructive' && styles.actionBtnDestructive,
-                    action.variant === 'primary' && styles.actionBtnPrimary,
-                  ]}
-                  onPress={() => {
-                    action.onPress();
-                    onClose();
-                  }}
-                >
-                  {action.icon}
-                  <Text
-                    style={[
-                      styles.actionText,
-                      action.variant === 'destructive' && styles.actionTextDestructive,
-                      action.variant === 'primary' && styles.actionTextPrimary,
-                    ]}
-                  >
-                    {action.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </Animated.View>
-      </GestureDetector>
-    </View>
+              {actions && actions.length > 0 && (
+                <View style={styles.actionsWrap}>
+                  {actions.map((action, i) => (
+                    <Pressable
+                      key={i}
+                      style={[
+                        styles.actionBtn,
+                        action.variant === 'destructive' && styles.actionBtnDestructive,
+                        action.variant === 'primary' && styles.actionBtnPrimary,
+                      ]}
+                      onPress={() => {
+                        action.onPress();
+                        onClose();
+                      }}
+                    >
+                      {action.icon}
+                      <Text
+                        style={[
+                          styles.actionText,
+                          action.variant === 'destructive' && styles.actionTextDestructive,
+                          action.variant === 'primary' && styles.actionTextPrimary,
+                        ]}
+                      >
+                        {action.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </Animated.View>
+          </GestureDetector>
+        </View>
+      </GestureHandlerRootView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalRoot: {
+    flex: 1,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -198,7 +209,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   actionBtnDestructive: {
-    backgroundColor: '#FEF0F0',
+    backgroundColor: Colors.errorSurface,
   },
   actionBtnPrimary: {
     backgroundColor: Colors.primary,

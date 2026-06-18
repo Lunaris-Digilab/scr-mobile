@@ -36,7 +36,7 @@ import {
   reorderRoutineSteps,
   generateUuid,
 } from '../lib/routines';
-import { getLogForDate, upsertLogForDate, isValidUuid } from '../lib/routine-logs';
+import { getLogForDate, upsertLogForDate, isValidUuid, getStreak } from '../lib/routine-logs';
 import { getProductsByIds } from '../lib/products';
 import type { RoutineStep, RoutineType } from '../types/routine';
 import { Colors, Shadows } from '../constants/Colors';
@@ -241,6 +241,9 @@ function SwipeableStepCard({
                 style={[styles.stepReorderBtn, index === 0 && styles.stepReorderBtnDisabled]}
                 onPress={() => { haptic.selection(); onMoveUp(); }}
                 disabled={index === 0}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11yMoveStepUp')}
+                hitSlop={6}
               >
                 <ChevronUp
                   size={18}
@@ -251,6 +254,9 @@ function SwipeableStepCard({
                 style={[styles.stepReorderBtn, index >= totalSteps - 1 && styles.stepReorderBtnDisabled]}
                 onPress={() => { haptic.selection(); onMoveDown(); }}
                 disabled={index >= totalSteps - 1}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11yMoveStepDown')}
+                hitSlop={6}
               >
                 <ChevronDown
                   size={18}
@@ -334,17 +340,20 @@ export default function RoutineScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [streak] = useState(1); // TODO: load from routine-logs
+  const [streak, setStreak] = useState(0);
   const prevCompletedRef = useRef(0);
 
   // Tab pill animation
   const tabPillLeft = useSharedValue(0);
+  const tabContainerWidth = useSharedValue(0);
   const tabPillStyle = useAnimatedStyle(() => ({
     left: tabPillLeft.value,
   }));
 
   useEffect(() => {
-    tabPillLeft.value = withSpring(activeTab === 'AM' ? 4 : '50%' as any, {
+    const padding = 4;
+    const target = activeTab === 'AM' ? padding : tabContainerWidth.value / 2;
+    tabPillLeft.value = withSpring(target, {
       damping: 18,
       stiffness: 120,
     });
@@ -431,6 +440,7 @@ export default function RoutineScreen() {
       }
       setUserId(user.id);
       loadRoutine(user.id, activeTab, user.email ?? undefined);
+      getStreak(user.id).then(setStreak).catch(() => setStreak(0));
     });
   }, [activeTab, loadRoutine, router]);
 
@@ -523,7 +533,9 @@ export default function RoutineScreen() {
     const next = completedStepIds.includes(stepId)
       ? completedStepIds.filter((id) => id !== stepId)
       : [...completedStepIds, stepId];
-    saveCompletedSteps(userId, routineId, next);
+    saveCompletedSteps(userId, routineId, next).then(() => {
+      getStreak(userId).then(setStreak).catch(() => {});
+    });
   };
 
   const weekDays = getWeekDays(selectedDate, DAY_LABELS);
@@ -549,6 +561,8 @@ export default function RoutineScreen() {
           <Pressable
             style={styles.calendarIconBtn}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11yReminders')}
             onPress={() => {
               haptic.light();
               router.push('/reminder-settings');
@@ -574,6 +588,9 @@ export default function RoutineScreen() {
                 key={day.date}
                 style={styles.dateCell}
                 onPress={() => handleSelectDay(day.date)}
+                accessibilityRole="button"
+                accessibilityLabel={day.date}
+                accessibilityState={{ selected }}
               >
                 <View
                   style={[styles.dateCircle, selected && styles.dateCircleSelected]}
@@ -591,7 +608,16 @@ export default function RoutineScreen() {
       </Animated.View>
 
       {/* AM/PM Tabs with animated pill */}
-      <View style={styles.tabs}>
+      <View
+        style={styles.tabs}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          tabContainerWidth.value = w;
+          // Set initial position without animation
+          const padding = 4;
+          tabPillLeft.value = activeTab === 'AM' ? padding : w / 2;
+        }}
+      >
         <Animated.View style={[styles.tabPill, tabPillStyle]} />
         {ROUTINE_TYPES.map(({ key, label, Icon }) => (
           <Pressable
@@ -680,7 +706,7 @@ export default function RoutineScreen() {
                         entering={FadeIn.duration(300)}
                         style={styles.progressCompleteText}
                       >
-                        {'\u2728'} Complete!
+                        {'\u2728'} {t('routineComplete')}
                       </Animated.Text>
                     )}
                   </View>
@@ -717,6 +743,8 @@ export default function RoutineScreen() {
       >
         <Pressable
           style={styles.fabInner}
+          accessibilityRole="button"
+          accessibilityLabel={t('shelfAddProduct')}
           onPress={() => {
             if (!routineId) return;
             haptic.medium();
@@ -845,8 +873,8 @@ const styles = StyleSheet.create({
   tabPill: {
     position: 'absolute',
     top: 4,
+    bottom: 4,
     width: '48%',
-    height: '100%',
     backgroundColor: Colors.card,
     borderRadius: 12,
     ...Shadows.glass,

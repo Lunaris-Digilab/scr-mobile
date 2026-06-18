@@ -93,6 +93,10 @@ function StackScreens() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="products/scan"
+          options={{ headerShown: false, animation: 'fade' }}
+        />
+        <Stack.Screen
           name="skin-profile"
           options={{
             title: t('skinProfile'),
@@ -106,6 +110,16 @@ function StackScreens() {
           name="reminder-settings"
           options={{
             title: t('reminderTitle'),
+            headerStyle: { backgroundColor: Colors.headerBackground },
+            headerTintColor: Colors.headerTint,
+            headerTitleStyle: { fontFamily: Typography.semibold, color: Colors.headerTint },
+            headerBackTitle: t('productsAddBack'),
+          }}
+        />
+        <Stack.Screen
+          name="progress"
+          options={{
+            title: t('progressTitle'),
             headerStyle: { backgroundColor: Colors.headerBackground },
             headerTintColor: Colors.headerTint,
             headerTitleStyle: { fontFamily: Typography.semibold, color: Colors.headerTint },

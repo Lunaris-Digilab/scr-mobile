@@ -11,8 +11,13 @@ const palette = {
   error: '#E25C69',
   success: '#2FB27E',
   gold: '#C78B4D',
+  goldDeep: '#A66A2E', // Most intense heatmap bucket
   shimmerBase: '#ECE5E1',
   shimmerHighlight: '#F6F1EE',
+  shadowTint: '#8f5c74', // Warm shadow cast used across cards/FABs
+  warningBackground: '#FEE2E2', // Soft red surface for warnings
+  warningText: '#B91C1C',
+  errorSurface: '#FEF0F0', // Soft red surface for destructive actions
 };
 
 export const Colors = {
@@ -48,8 +53,13 @@ export const Colors = {
 
   // Extended palette
   gold: palette.gold,
+  goldDeep: palette.goldDeep,
   shimmerBase: palette.shimmerBase,
   shimmerHighlight: palette.shimmerHighlight,
+  shadowTint: palette.shadowTint,
+  warningBackground: palette.warningBackground,
+  warningText: palette.warningText,
+  errorSurface: palette.errorSurface,
 };
 
 export const Gradients = {
@@ -61,14 +71,14 @@ export const Gradients = {
 
 export const Shadows = {
   card: {
-    shadowColor: '#8f5c74',
+    shadowColor: palette.shadowTint,
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 12,
     elevation: 4,
   },
   cardHover: {
-    shadowColor: '#8f5c74',
+    shadowColor: palette.shadowTint,
     shadowOpacity: 0.16,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 20,
@@ -82,7 +92,7 @@ export const Shadows = {
     elevation: 3,
   },
   fab: {
-    shadowColor: '#8f5c74',
+    shadowColor: palette.shadowTint,
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,

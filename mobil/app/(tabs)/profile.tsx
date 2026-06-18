@@ -5,12 +5,13 @@ import {
   View,
   Pressable,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps,
   withTiming,
-  useDerivedValue,
   FadeIn,
   FadeInDown,
   FadeInUp,
@@ -19,16 +20,17 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Settings, Pencil, LogOut, TrendingUp, ChevronRight } from 'lucide-react-native';
+import { Pencil, LogOut, TrendingUp, ChevronRight, Flame, ShieldCheck } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
-import { getRoutineLogDaysCount } from '../../lib/routine-logs';
+import { getProgressStats } from '../../lib/progress';
 import { getUserProducts } from '../../lib/user-products';
-import { getCurrentUserSkinProfile, type UserSkinProfile } from '../../lib/users';
+import { getCurrentUserSkinProfile, updateUserSkinProfile, type UserSkinProfile } from '../../lib/users';
+import { getCurrentUserRole } from '../../lib/profile-role';
 import { Colors, Gradients, Shadows } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
 import { useLanguage } from '../../context/LanguageContext';
 import { LOCALE_OPTIONS, type Locale } from '../../constants/translations';
-import { getTranslation } from '../../constants/translations';
+import { getTranslation, getMonthsShort } from '../../constants/translations';
 import type { TranslationKey } from '../../constants/translations';
 import { ProfileSkeleton } from '../../components/Skeleton';
 import { BottomSheet } from '../../components/BottomSheet';
@@ -48,60 +50,56 @@ function getTranslatedConcerns(enLabels: string[] | undefined, t: (k: Translatio
   });
 }
 
-function formatSkinConcernsDisplay(enLabels: string[] | undefined, t: (k: TranslationKey) => string): string {
-  if (!enLabels?.length) return '—';
-  return getTranslatedConcerns(enLabels, t).join(', ');
-}
-
 type UserProfile = {
   email: string | null;
   displayName: string;
   createdAt: string | null;
-  routineStreakDays: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalActiveDays: number;
   productsCount: number;
   skinProfile: UserSkinProfile | null;
+  isAdmin: boolean;
 };
 
-type SkinRow = {
-  key: string;
-  labelKey: 'primaryConcerns' | 'sensitivity' | 'climate' | 'allergies';
-  getValue: (profile: UserProfile, t: (k: TranslationKey) => string) => string;
-};
-
-function getSkinProfileRows(): SkinRow[] {
-  return [
-    { key: 'concerns', labelKey: 'primaryConcerns', getValue: (p, t) => formatSkinConcernsDisplay(p.skinProfile?.skin_concerns, t) },
-    { key: 'sensitivity', labelKey: 'sensitivity', getValue: () => '—' },
-    { key: 'climate', labelKey: 'climate', getValue: () => '—' },
-    { key: 'allergies', labelKey: 'allergies', getValue: () => '—' },
-  ];
-}
-
-function formatMemberSince(createdAt: string | null, memberSinceText: string): string {
+function formatMemberSince(createdAt: string | null, template: string, locale: Locale): string {
   if (!createdAt) return '—';
   const d = new Date(createdAt);
-  const months = ['Oca', 'Sub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Agu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-  return `${months[d.getMonth()]} ${d.getFullYear()} ${memberSinceText}`;
+  const months = getMonthsShort(locale);
+  const date = `${months[d.getMonth()]} ${d.getFullYear()}`;
+  return template.replace('{date}', date);
 }
 
 /* ---------- Animated Counter ---------- */
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+
 function AnimatedCounter({ value, suffix }: { value: number; suffix?: string }) {
   const animVal = useSharedValue(0);
 
   useEffect(() => {
     animVal.value = withTiming(value, {
-      duration: 800,
+      duration: 900,
       easing: Easing.out(Easing.cubic),
     });
   }, [value]);
 
-  const displayVal = useDerivedValue(() => Math.round(animVal.value));
+  const animatedProps = useAnimatedProps(() => {
+    const rounded = Math.round(animVal.value);
+    return {
+      text: suffix ? `${rounded} ${suffix}` : `${rounded}`,
+    } as any;
+  });
 
-  // Using a simple approach since AnimatedText with animatedProps is complex
   return (
-    <Text style={styles.statValue}>
-      {value}{suffix ? ` ${suffix}` : ''}
-    </Text>
+    <AnimatedTextInput
+      style={[styles.statValue, styles.counterInput]}
+      editable={false}
+      pointerEvents="none"
+      underlineColorAndroid="transparent"
+      defaultValue={suffix ? `0 ${suffix}` : '0'}
+      animatedProps={animatedProps}
+      accessibilityLabel={suffix ? `${value} ${suffix}` : `${value}`}
+    />
   );
 }
 
@@ -112,6 +110,32 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [languageSheetVisible, setLanguageSheetVisible] = useState(false);
+  const [skinTypeSheetVisible, setSkinTypeSheetVisible] = useState(false);
+
+  const SKIN_TYPES = [
+    { value: 'Normal', labelKey: 'skinTypeNormal' as TranslationKey },
+    { value: 'Dry', labelKey: 'skinTypeDry' as TranslationKey },
+    { value: 'Oily', labelKey: 'skinTypeOily' as TranslationKey },
+    { value: 'Combination', labelKey: 'skinTypeCombination' as TranslationKey },
+    { value: 'Sensitive', labelKey: 'skinTypeSensitive' as TranslationKey },
+  ];
+
+  const handleSkinTypeChange = async (value: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await updateUserSkinProfile(user.id, { skin_type: value });
+    setProfile((prev) => prev ? {
+      ...prev,
+      skinProfile: { ...prev.skinProfile, skin_type: value, skin_concerns: prev.skinProfile?.skin_concerns ?? [] },
+    } : prev);
+    haptic.success();
+  };
+
+  const getTranslatedSkinType = (value: string | null | undefined): string => {
+    if (!value?.trim()) return t('addSkinType');
+    const match = SKIN_TYPES.find((s) => s.value === value);
+    return match ? t(match.labelKey) : value;
+  };
 
   const loadProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -121,10 +145,11 @@ export default function ProfileScreen() {
       return;
     }
     try {
-      const [streakDays, products, skinProfile] = await Promise.all([
-        getRoutineLogDaysCount(user.id),
+      const [stats, products, skinProfile, role] = await Promise.all([
+        getProgressStats(user.id),
         getUserProducts(user.id),
         getCurrentUserSkinProfile(user.id),
+        getCurrentUserRole(),
       ]);
       const displayName = user.user_metadata?.full_name
         ?? user.email?.split('@')[0]?.replace(/[._]/g, ' ')?.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -133,9 +158,12 @@ export default function ProfileScreen() {
         email: user.email ?? null,
         displayName,
         createdAt: user.created_at ?? null,
-        routineStreakDays: streakDays,
+        currentStreak: stats.currentStreak,
+        longestStreak: stats.longestStreak,
+        totalActiveDays: stats.totalActiveDays,
         productsCount: products.length,
         skinProfile,
+        isAdmin: role === 'admin',
       });
     } catch (e) {
       console.error(e);
@@ -143,9 +171,12 @@ export default function ProfileScreen() {
         email: user.email ?? null,
         displayName: user.email?.split('@')[0] ?? 'User',
         createdAt: user.created_at ?? null,
-        routineStreakDays: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        totalActiveDays: 0,
         productsCount: 0,
         skinProfile: null,
+        isAdmin: false,
       });
     } finally {
       setLoading(false);
@@ -185,11 +216,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-          <View style={styles.headerIcon} />
           <Text style={styles.headerTitle}>{t('userProfile')}</Text>
-          <Pressable style={styles.headerIcon} hitSlop={12}>
-            <Settings size={22} color={Colors.text} />
-          </Pressable>
         </Animated.View>
 
         {/* Avatar with gradient ring */}
@@ -207,10 +234,18 @@ export default function ProfileScreen() {
             </View>
           </LinearGradient>
           <Text style={styles.displayName}>{profile.displayName}</Text>
-          <Text style={styles.skinType}>
-            {profile.skinProfile?.skin_type?.trim() ? profile.skinProfile.skin_type : t('addSkinType')}
-          </Text>
-          <Text style={styles.memberSince}>{formatMemberSince(profile.createdAt, t('memberSince'))}</Text>
+          {profile.isAdmin && (
+            <View style={styles.adminBadge}>
+              <ShieldCheck size={13} color={Colors.gold} />
+              <Text style={styles.adminBadgeText}>{t('profileAdminBadge')}</Text>
+            </View>
+          )}
+          <Pressable onPress={() => { haptic.light(); setSkinTypeSheetVisible(true); }}>
+            <Text style={[styles.skinType, !profile.skinProfile?.skin_type?.trim() && styles.skinTypeEmpty]}>
+              {getTranslatedSkinType(profile.skinProfile?.skin_type)}
+            </Text>
+          </Pressable>
+          <Text style={styles.memberSince}>{formatMemberSince(profile.createdAt, t('memberSince'), locale ?? 'tr')}</Text>
         </Animated.View>
 
         {/* Language Row */}
@@ -230,47 +265,66 @@ export default function ProfileScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Stats with count-up */}
+        {/* Stats with count-up — tappable into the progress dashboard */}
         <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>{t('routineStreak')}</Text>
-            <AnimatedCounter value={profile.routineStreakDays} suffix={t('days')} />
+          <Pressable
+            style={styles.statCard}
+            onPress={() => { haptic.light(); router.push('/progress'); }}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('currentStreak')}: ${profile.currentStreak} ${t('days')}`}
+          >
+            <View style={styles.statHeaderRow}>
+              <Text style={styles.statLabel}>{t('currentStreak')}</Text>
+              <ChevronRight size={16} color={Colors.textSecondary} />
+            </View>
+            <AnimatedCounter value={profile.currentStreak} suffix={t('days')} />
+            <View style={styles.statTrend}>
+              <Flame size={12} color={Colors.gold} />
+              <Text style={styles.statTrendText}>{t('longestStreak')}: {profile.longestStreak}</Text>
+            </View>
+          </Pressable>
+          <Pressable
+            style={styles.statCard}
+            onPress={() => { haptic.light(); router.push('/progress'); }}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('productsUsed')}: ${profile.productsCount}`}
+          >
+            <View style={styles.statHeaderRow}>
+              <Text style={styles.statLabel}>{t('productsUsed')}</Text>
+              <ChevronRight size={16} color={Colors.textSecondary} />
+            </View>
+            <AnimatedCounter value={profile.productsCount} />
             <View style={styles.statTrend}>
               <TrendingUp size={12} color={Colors.primary} />
-              <Text style={styles.statTrendText}>+2%</Text>
+              <Text style={styles.statTrendText}>{profile.totalActiveDays} {t('totalActiveDays')}</Text>
             </View>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>{t('productsUsed')}</Text>
-            <AnimatedCounter value={profile.productsCount} />
-            <Text style={styles.statTrendText}>{t('thisWeek')}</Text>
-          </View>
+          </Pressable>
         </Animated.View>
 
-        {/* Skin Profile */}
+        {/* Skin Profile — only real, backed data */}
         <Animated.View entering={FadeInDown.delay(400).duration(400)} style={styles.skinSection}>
           <Text style={styles.sectionTitle}>{t('skinProfile')}</Text>
           <View style={styles.skinCard}>
-            {getSkinProfileRows().map((row, index) => {
-              const isLast = index === getSkinProfileRows().length - 1;
-              const isConcerns = row.key === 'concerns';
-              return (
-                <View key={row.key} style={[styles.skinRow, isLast && styles.skinRowLast]}>
-                  <Text style={styles.skinLabel}>{t(row.labelKey)}</Text>
-                  {isConcerns && translatedConcerns.length > 0 ? (
-                    <View style={styles.skinChipsRow}>
-                      {translatedConcerns.map((label) => (
-                        <View key={label} style={styles.skinChip}>
-                          <Text style={styles.skinChipText}>{label}</Text>
-                        </View>
-                      ))}
+            <View style={styles.skinRow}>
+              <Text style={styles.skinLabel}>{t('skinType')}</Text>
+              <Text style={styles.skinValue}>
+                {getTranslatedSkinType(profile.skinProfile?.skin_type)}
+              </Text>
+            </View>
+            <View style={[styles.skinRow, styles.skinRowLast]}>
+              <Text style={styles.skinLabel}>{t('primaryConcerns')}</Text>
+              {translatedConcerns.length > 0 ? (
+                <View style={styles.skinChipsRow}>
+                  {translatedConcerns.map((label) => (
+                    <View key={label} style={styles.skinChip}>
+                      <Text style={styles.skinChipText}>{label}</Text>
                     </View>
-                  ) : (
-                    <Text style={styles.skinValue}>{row.getValue(profile, t)}</Text>
-                  )}
+                  ))}
                 </View>
-              );
-            })}
+              ) : (
+                <Text style={styles.skinValue}>—</Text>
+              )}
+            </View>
           </View>
         </Animated.View>
 
@@ -307,6 +361,18 @@ export default function ProfileScreen() {
           },
         }))}
       />
+
+      {/* Skin Type Bottom Sheet */}
+      <BottomSheet
+        visible={skinTypeSheetVisible}
+        onClose={() => setSkinTypeSheetVisible(false)}
+        title={t('selectSkinType')}
+        actions={SKIN_TYPES.map((st) => ({
+          label: t(st.labelKey),
+          variant: profile.skinProfile?.skin_type === st.value ? 'primary' as const : 'default' as const,
+          onPress: () => handleSkinTypeChange(st.value),
+        }))}
+      />
     </View>
   );
 }
@@ -324,16 +390,8 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 24,
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 18,
@@ -373,11 +431,31 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 4,
   },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.gold + '1F',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    marginBottom: 6,
+  },
+  adminBadgeText: {
+    fontSize: 12,
+    fontFamily: Typography.semibold,
+    color: Colors.gold,
+    letterSpacing: 0.3,
+  },
   skinType: {
     fontSize: 15,
     fontFamily: Typography.medium,
     color: Colors.primary,
     marginBottom: 4,
+  },
+  skinTypeEmpty: {
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
   },
   memberSince: {
     fontSize: 13,
@@ -425,17 +503,28 @@ const styles = StyleSheet.create({
     padding: 16,
     ...Shadows.card,
   },
+  statHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   statLabel: {
     fontSize: 13,
     fontFamily: Typography.semibold,
     color: Colors.primary,
-    marginBottom: 6,
   },
   statValue: {
     fontSize: 22,
     fontFamily: Typography.bold,
     color: Colors.text,
     marginBottom: 6,
+  },
+  counterInput: {
+    padding: 0,
+    margin: 0,
+    height: 30,
+    includeFontPadding: false,
   },
   statTrend: {
     flexDirection: 'row',

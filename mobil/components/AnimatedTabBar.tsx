@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Pressable, StyleSheet, Platform, type LayoutChangeEvent } from 'react-native';
+import { View, Pressable, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,14 +8,63 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, Package, ShoppingBag, User } from 'lucide-react-native';
+import { Calendar, Package, ShoppingBag, User, type LucideIcon } from 'lucide-react-native';
 import { Colors } from '../constants/Colors';
 import { Typography } from '../constants/Typography';
 import { haptic } from '../lib/haptics';
 
-const TAB_ICONS = [Calendar, Package, ShoppingBag, User];
+const TAB_ICONS: LucideIcon[] = [Calendar, Package, ShoppingBag, User];
 const SPRING_CONFIG = { damping: 18, stiffness: 120, mass: 0.8 };
 const BOUNCE_CONFIG = { damping: 12, stiffness: 200 };
+const PILL_INSET = 6;
+
+/* ---------- Single tab (owns its own animation hooks) ---------- */
+function TabBarItem({
+  label,
+  Icon,
+  isFocused,
+  onPress,
+  onLayout,
+}: {
+  label: string;
+  Icon: LucideIcon;
+  isFocused: boolean;
+  onPress: () => void;
+  onLayout: (event: LayoutChangeEvent) => void;
+}) {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (isFocused) {
+      scale.value = withSequence(
+        withSpring(1.2, BOUNCE_CONFIG),
+        withSpring(1, BOUNCE_CONFIG)
+      );
+    }
+  }, [isFocused]);
+
+  const iconAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Pressable
+      style={styles.tab}
+      onPress={onPress}
+      onLayout={onLayout}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: isFocused }}
+    >
+      <Animated.View style={iconAnimatedStyle}>
+        <Icon size={22} color={isFocused ? Colors.text : Colors.tabIconDefault} />
+      </Animated.View>
+      <Animated.Text style={[styles.label, isFocused && styles.labelActive]}>
+        {label}
+      </Animated.Text>
+    </Pressable>
+  );
+}
 
 export function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -23,22 +72,17 @@ export function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarP
   const tabPositions = React.useRef<number[]>([]);
   const pillLeft = useSharedValue(0);
   const pillWidth = useSharedValue(0);
-  const iconScales = state.routes.map(() => useSharedValue(1));
 
   useEffect(() => {
     if (tabPositions.current[state.index] !== undefined) {
       pillLeft.value = withSpring(tabPositions.current[state.index], SPRING_CONFIG);
       pillWidth.value = withSpring(tabWidths.current[state.index], SPRING_CONFIG);
     }
-    iconScales[state.index].value = withSequence(
-      withSpring(1.2, BOUNCE_CONFIG),
-      withSpring(1, BOUNCE_CONFIG)
-    );
   }, [state.index]);
 
   const pillStyle = useAnimatedStyle(() => ({
-    left: pillLeft.value,
-    width: pillWidth.value,
+    left: pillLeft.value + PILL_INSET,
+    width: pillWidth.value - PILL_INSET * 2,
   }));
 
   const handleTabLayout = (index: number, event: LayoutChangeEvent) => {
@@ -53,25 +97,16 @@ export function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarP
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          paddingBottom: Platform.OS === 'ios' ? insets.bottom : 10,
-        },
-      ]}
+      style={[styles.container, { paddingBottom: Math.max(insets.bottom, 10) }]}
     >
       <View style={styles.tabRow}>
         <Animated.View style={[styles.pill, pillStyle]} />
 
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
-          const label = options.title ?? route.name;
+          const label = (options.title ?? route.name) as string;
           const isFocused = state.index === index;
-          const Icon = TAB_ICONS[index];
-
-          const iconAnimatedStyle = useAnimatedStyle(() => ({
-            transform: [{ scale: iconScales[index].value }],
-          }));
+          const Icon = TAB_ICONS[index] ?? Calendar;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -87,27 +122,14 @@ export function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarP
           };
 
           return (
-            <Pressable
+            <TabBarItem
               key={route.key}
-              style={styles.tab}
+              label={label}
+              Icon={Icon}
+              isFocused={isFocused}
               onPress={onPress}
               onLayout={(e) => handleTabLayout(index, e)}
-            >
-              <Animated.View style={iconAnimatedStyle}>
-                <Icon
-                  size={22}
-                  color={isFocused ? Colors.text : Colors.tabIconDefault}
-                />
-              </Animated.View>
-              <Animated.Text
-                style={[
-                  styles.label,
-                  isFocused && styles.labelActive,
-                ]}
-              >
-                {label}
-              </Animated.Text>
-            </Pressable>
+            />
           );
         })}
       </View>
@@ -130,7 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingVertical: 8,
     paddingHorizontal: 4,
-    shadowColor: '#8f5c74',
+    shadowColor: Colors.shadowTint,
     shadowOpacity: 0.14,
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 20,
@@ -138,10 +160,10 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: 'absolute',
-    top: 6,
-    height: '80%',
-    backgroundColor: Colors.medium + '30',
-    borderRadius: 20,
+    top: 5,
+    bottom: 5,
+    backgroundColor: Colors.medium + '20',
+    borderRadius: 16,
   },
   tab: {
     flex: 1,

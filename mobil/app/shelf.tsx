@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Package, Plus, Trash2, Archive } from 'lucide-react-native';
+import { Package, Plus, Trash2, Archive, Heart, CheckCircle2, Ellipsis } from 'lucide-react-native';
 import {
   StyleSheet,
   Text,
@@ -168,23 +168,45 @@ export default function ShelfScreen() {
     setSheetVisible(true);
   };
 
+  const moveToStatus = async (item: UserProductWithProduct, status: UserProductStatus) => {
+    try {
+      await updateUserProduct(item.id, { status });
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      haptic.success();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const getSheetActions = (): BottomSheetAction[] => {
     if (!sheetItem) return [];
     const actions: BottomSheetAction[] = [];
+    const status = sheetItem.status;
 
-    if (sheetItem.status === 'opened') {
+    if (status !== 'opened') {
       actions.push({
-        label: t('shelfMoveToEmpty'),
-        icon: <Archive size={18} color={Colors.text} />,
+        label: t('shelfMyShelf'),
+        icon: <Package size={18} color={Colors.text} />,
         variant: 'default',
-        onPress: async () => {
-          try {
-            await updateUserProduct(sheetItem.id, { status: 'empty' });
-            setItems((prev) => prev.filter((i) => i.id !== sheetItem.id));
-          } catch (e) {
-            console.error(e);
-          }
-        },
+        onPress: () => moveToStatus(sheetItem, 'opened'),
+      });
+    }
+
+    if (status !== 'wishlist') {
+      actions.push({
+        label: t('shelfWishlist'),
+        icon: <Heart size={18} color={Colors.text} />,
+        variant: 'default',
+        onPress: () => moveToStatus(sheetItem, 'wishlist'),
+      });
+    }
+
+    if (status !== 'empty') {
+      actions.push({
+        label: t('shelfEmpty'),
+        icon: <CheckCircle2 size={18} color={Colors.text} />,
+        variant: 'default',
+        onPress: () => moveToStatus(sheetItem, 'empty'),
       });
     }
 
@@ -196,6 +218,7 @@ export default function ShelfScreen() {
         try {
           await removeFromShelf(sheetItem.id);
           setItems((prev) => prev.filter((i) => i.id !== sheetItem.id));
+          haptic.success();
         } catch (e) {
           console.error(e);
         }
@@ -249,9 +272,23 @@ export default function ShelfScreen() {
                 {brand.toUpperCase()}
               </Text>
             ) : null}
-            <Text style={styles.cardName} numberOfLines={2}>
-              {product.name}
-            </Text>
+            <View style={styles.cardNameRow}>
+              <Text style={styles.cardName} numberOfLines={2}>
+                {product.name}
+              </Text>
+              <Pressable
+                style={styles.cardStatusBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11yMoreOptions')}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  handleCardLongPress(item);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ellipsis size={16} color={Colors.textSecondary} />
+              </Pressable>
+            </View>
           </View>
         </AnimatedCard>
       </Animated.View>
@@ -478,7 +515,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
   },
   badgeWarning: {
-    backgroundColor: '#fecaca',
+    backgroundColor: Colors.warningBackground,
   },
   badgeText: {
     fontSize: 11,
@@ -488,7 +525,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   badgeTextWarning: {
-    color: '#b91c1c',
+    color: Colors.warningText,
   },
   cardBody: {
     padding: 10,
@@ -500,10 +537,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 4,
   },
+  cardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 4,
+  },
   cardName: {
+    flex: 1,
     fontSize: 13,
     fontFamily: Typography.semibold,
     color: Colors.text,
+  },
+  cardStatusBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.lightGray,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   /* FAB */
